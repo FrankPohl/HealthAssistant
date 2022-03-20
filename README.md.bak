@@ -10,4 +10,3 @@ I'm using different Nuget packages. Mainly these
  
 # Problems
 I do not get any answer from the deepgram SDK. I do not know whether something wsa processed or not.
-Reopening the connection after close is alos not working as epxected but raises an error.
