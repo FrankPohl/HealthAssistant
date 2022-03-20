@@ -159,17 +159,20 @@ public partial class MainPage : ContentPage
     int i =0;
     private void  OnDataAvailable(object sender, WaveInEventArgs e)
     {
-        // Write to file
         i += 1;
         Debug.WriteLine($"Sending Data Package no: {i} with length {e.Buffer.Length}");
-        _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
 
-        int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
-        if (secondsRecorded >= 60)
-        {
-            Debug.WriteLine("Stop automatically after 60 seconds ");
-            _waveIn.StopRecording();
-        }
+        // Write to file to show that audio in worked
+        // I got this from an NAudio sample 
+
+        //_waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
+
+        //int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
+        //if (secondsRecorded >= 60)
+        //{
+        //    Debug.WriteLine("Stop automatically after 60 seconds ");
+        //    _waveIn.StopRecording();
+        //}
 
         // write tp deepgram
         _deepgramLive.SendData(e.Buffer);
