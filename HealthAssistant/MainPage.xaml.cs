@@ -166,8 +166,7 @@ public partial class MainPage : ContentPage
 
         // Write to file to show that audio in worked
         // I got this from an NAudio sample 
-
-        _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
+        // _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
 
         //int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
         //if (secondsRecorded >= 60)
@@ -177,8 +176,8 @@ public partial class MainPage : ContentPage
         //}
 
         // write tp deepgram
-        //_deepgramLive.SendData(e.Buffer);
-        //Task.Delay(50).Wait();
+        _deepgramLive.SendData(e.Buffer);
+        Task.Delay(50).Wait();
     }
 
 	private void OnRecordginStopped(object sender, StoppedEventArgs e)
