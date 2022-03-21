@@ -70,6 +70,7 @@ public partial class MainPage : ContentPage
         await _deepgramLive.StartConnectionAsync(_options);
     }
 
+
     private void OnStartAudioClicked(object sender, EventArgs e)
     {
         // Get the enumeration of the audio in devices
@@ -92,6 +93,7 @@ public partial class MainPage : ContentPage
         Debug.WriteLine($"            Bits: {_waveIn.WaveFormat.BitsPerSample}");
         Debug.WriteLine($"            Channels: {_waveIn.WaveFormat.Channels}");
         Debug.WriteLine($"            Blockalign: {_waveIn.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"            Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
         _waveWriter = new WaveFileWriter(@"C:\Temp\Test.wav", _waveIn.WaveFormat);
         _waveIn.StartRecording();
     }
@@ -165,7 +167,7 @@ public partial class MainPage : ContentPage
         // Write to file to show that audio in worked
         // I got this from an NAudio sample 
 
-        //_waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
+        _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
 
         //int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
         //if (secondsRecorded >= 60)
@@ -175,17 +177,38 @@ public partial class MainPage : ContentPage
         //}
 
         // write tp deepgram
-        _deepgramLive.SendData(e.Buffer);
-        Task.Delay(50).Wait();
+        //_deepgramLive.SendData(e.Buffer);
+        //Task.Delay(50).Wait();
     }
 
 	private void OnRecordginStopped(object sender, StoppedEventArgs e)
     {
         _waveWriter.Close();
+        _waveWriter.Dispose();
         Debug.WriteLine("Audio In stopped");
         DispatchStatusMsg($"Audio In stopped");
 
     }
     #endregion
+
+    private async void OnConvertFileClicked(object sender, EventArgs e)
+    {
+
+        var picker = await FilePicker.PickAsync();
+        if (picker == null)
+        {
+            return;
+        }
+        Debug.WriteLine($"Convert {picker.FullPath}");
+        var credentials = new Credentials("9bc2b8137471bdc642b5cb4b7c29c6e960462a2e");
+         // credentials.ApiUrl = @"https://api.deepgram.com";
+            var deepgramClient = new DeepgramClient(credentials);
+            var options = new PrerecordedTranscriptionOptions()
+            {
+                Utterances = true,
+                Punctuate = false
+            };
+            var response = await deepgramClient.Transcription.Prerecorded.GetTranscriptionAsync(new UrlSource(picker.FullPath), null);
+    }
 }
 

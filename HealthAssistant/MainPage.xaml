@@ -13,8 +13,9 @@
             <Button Text="StartRecognition" Grid.Row="1" Clicked="OnStartAudioClicked"/>
             <Button Text="StopRecognition" Grid.Row="2" Clicked="OnStopAudioClicked"/>
             <Button Text="Restart" Grid.Row="3" Clicked="OnReOpenDeepgramConnectionClicked"/>
-            <Label Text="Status" Grid.Row="4"/>
-            <Label x:Name="Status" Grid.Row="5" MaxLines="20" />
+            <Button Text="Convert file" Grid.Row="3" Clicked="OnConvertFileClicked"/>
+            <Label Text="Status" Grid.Row="5"/>
+            <Label x:Name="Status" Grid.Row="6" MaxLines="20" />
         </Grid>
     </ScrollView>
 </ContentPage>
