@@ -5,17 +5,20 @@
              BackgroundColor="{DynamicResource SecondaryColor}">
 
     <ScrollView>
-        <Grid RowSpacing="25" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,*"
+        <Grid RowSpacing="5" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
               Padding="{OnPlatform iOS='30,60,30,30', Default='30'}" >
             <Button Grid.Row="0"
                 Text="Init Deepgram"
                 Clicked="OnInitDeepgramClicked"/>
-            <Button Text="StartRecognition" Grid.Row="1" Clicked="OnStartAudioClicked"/>
-            <Button Text="StopRecognition" Grid.Row="2" Clicked="OnStopAudioClicked"/>
-            <Button Text="Restart" Grid.Row="3" Clicked="OnReOpenDeepgramConnectionClicked"/>
-            <Button Text="Convert file" Grid.Row="3" Clicked="OnConvertFileClicked"/>
-            <Label Text="Status" Grid.Row="5"/>
-            <Label x:Name="Status" Grid.Row="6" MaxLines="20" />
+            <Button Text="Start Recognition save without conversion" Grid.Row="1" Clicked="OnStartRecognitionAndSaveClicked"/>
+            <Button Text="Start Recognition with conversion" Grid.Row="2" Clicked="OnStartAudioWithConversionClicked"/>
+            <Button Text="Start Recognition with deepgram" Grid.Row="3" Clicked="OnStartAudioWithDeepgramClicked"/>
+            <Button Text="Stop Recognition" Grid.Row="4" Clicked="OnStopAudioClicked"/>
+            <Button Text="Restart Deepgram" Grid.Row="5" Clicked="OnReOpenDeepgramConnectionClicked"/>
+            <Button Text="Translate file with deepgram" Grid.Row="6" Clicked="OnTranslateFileClicked"/>
+            <Button Text="Convert file (Sample from stackoverflow)" Grid.Row="7" Clicked="OnConvertFileClicked"/>
+            <Label Text="Status" Grid.Row="8"/>
+            <Label x:Name="Status" Grid.Row="8" MaxLines="20" />
         </Grid>
     </ScrollView>
 </ContentPage>
