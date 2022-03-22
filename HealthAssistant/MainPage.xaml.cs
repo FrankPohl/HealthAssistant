@@ -76,7 +76,6 @@ public partial class MainPage : ContentPage
         await _deepgramLive.StartConnectionAsync(_options);
     }
 
-
     private void OnStartRecognitionAndSaveClicked(object sender, EventArgs e)
     {
         Debug.WriteLine($"OnStartRecognitionAndSaveClicked");
@@ -96,12 +95,13 @@ public partial class MainPage : ContentPage
         _waveIn.DataAvailable += OnDataAvailable;
         _waveIn.RecordingStopped += OnRecordginStopped;
         iBufferCounter = 0;
-        Debug.WriteLine($"Waveformat: Samplerate: {_waveIn.WaveFormat.SampleRate}");
-        Debug.WriteLine($"            Encoding: {_waveIn.WaveFormat.Encoding}");
-        Debug.WriteLine($"            Bits: {_waveIn.WaveFormat.BitsPerSample}");
-        Debug.WriteLine($"            Channels: {_waveIn.WaveFormat.Channels}");
-        Debug.WriteLine($"            Blockalign: {_waveIn.WaveFormat.BlockAlign}");
-        Debug.WriteLine($"            Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
+        Debug.WriteLine($"Waveformat (input and output the same");
+        Debug.WriteLine($"   Samplerate: {_waveIn.WaveFormat.SampleRate}");
+        Debug.WriteLine($"   Encoding: {_waveIn.WaveFormat.Encoding}");
+        Debug.WriteLine($"   Bits: {_waveIn.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"   Channels: {_waveIn.WaveFormat.Channels}");
+        Debug.WriteLine($"   Blockalign: {_waveIn.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"   Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
 
         _waveWriter = new WaveFileWriter($@"C:\Temp\TestUnconverted-{_waveIn.WaveFormat.SampleRate}-{_waveIn.WaveFormat.Encoding}-{_waveIn.WaveFormat.Channels}.wav", _waveIn.WaveFormat);
         _waveIn.StartRecording();
@@ -127,12 +127,13 @@ public partial class MainPage : ContentPage
         _waveIn = new WasapiCapture(device);
         _waveIn.DataAvailable += OnDataAvailablecConvert;
         _waveIn.RecordingStopped += OnRecordginStopped;
-        Debug.WriteLine($"Waveformat: Samplerate: {_waveIn.WaveFormat.SampleRate}");
-        Debug.WriteLine($"            Encoding: {_waveIn.WaveFormat.Encoding}");
-        Debug.WriteLine($"            Bits: {_waveIn.WaveFormat.BitsPerSample}");
-        Debug.WriteLine($"            Channels: {_waveIn.WaveFormat.Channels}");
-        Debug.WriteLine($"            Blockalign: {_waveIn.WaveFormat.BlockAlign}");
-        Debug.WriteLine($"            Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
+        Debug.WriteLine($"Waveformat from device");
+        Debug.WriteLine($"   Samplerate: {_waveIn.WaveFormat.SampleRate}");
+        Debug.WriteLine($"   Encoding: {_waveIn.WaveFormat.Encoding}");
+        Debug.WriteLine($"   Bits: {_waveIn.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"   Channels: {_waveIn.WaveFormat.Channels}");
+        Debug.WriteLine($"   Blockalign: {_waveIn.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"   Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
 
         var waveOutFormat = new WaveFormat(sampleRate: 16000, channels: 1);
 
@@ -157,6 +158,7 @@ public partial class MainPage : ContentPage
         using (var writer = new NAudio.Wave.WaveFileWriter(convertedFileName, waveOutFormat))
         {
             DispatchStatusMsg($"Convert file {picker.FullPath}  to {convertedFileName}");
+            Debug.WriteLine($"Reader hat eine Länge von {reader.Length}");
             float[] floats;
             //a variable to flag the mod 3-ness of the current sample
             //we're mapping 48000 --> 16000, so we need to average 3 source
@@ -216,12 +218,13 @@ public partial class MainPage : ContentPage
         _waveIn.DataAvailable += OnDataAvailablecSend;
         _waveIn.RecordingStopped += OnRecordginStopped;
         iBufferCounter = 0;
-        Debug.WriteLine($"Waveformat: Samplerate: {_waveIn.WaveFormat.SampleRate}");
-        Debug.WriteLine($"            Encoding: {_waveIn.WaveFormat.Encoding}");
-        Debug.WriteLine($"            Bits: {_waveIn.WaveFormat.BitsPerSample}");
-        Debug.WriteLine($"            Channels: {_waveIn.WaveFormat.Channels}");
-        Debug.WriteLine($"            Blockalign: {_waveIn.WaveFormat.BlockAlign}");
-        Debug.WriteLine($"            Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
+        Debug.WriteLine($"Wave format from device");
+        Debug.WriteLine($"    Samplerate: {_waveIn.WaveFormat.SampleRate}");
+        Debug.WriteLine($"    Encoding: {_waveIn.WaveFormat.Encoding}");
+        Debug.WriteLine($"    Bits: {_waveIn.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"   Channels: {_waveIn.WaveFormat.Channels}");
+        Debug.WriteLine($"   Blockalign: {_waveIn.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"   Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
         //var waveOutFormat = new WaveFormat(sampleRate: _waveIn.WaveFormat.SampleRate, channels: _waveIn.WaveFormat.Channels);
         // WaveFloatTo16Provider prov = new WaveFloatTo16Provider()
 
@@ -240,16 +243,17 @@ public partial class MainPage : ContentPage
         {
             return;
         }
+        Debug.WriteLine($"Translate file {picker.FullPath} with deepgram");
         var waveReader = new WaveFileReader(picker.FullPath);
-        Debug.WriteLine($"Waveformat: Samplerate: {waveReader.WaveFormat.SampleRate}");
-        Debug.WriteLine($"            Encoding: {waveReader.WaveFormat.Encoding}");
-        Debug.WriteLine($"            Bits: {waveReader.WaveFormat.BitsPerSample}");
-        Debug.WriteLine($"            Channels: {waveReader.WaveFormat.Channels}");
-        Debug.WriteLine($"            Blockalign: {waveReader.WaveFormat.BlockAlign}");
-        Debug.WriteLine($"            Bytes per Second: {waveReader.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
+        Debug.WriteLine($"Input file Wave format");
+        Debug.WriteLine($"    Samplerate: {waveReader.WaveFormat.SampleRate}");
+        Debug.WriteLine($"    Encoding: {waveReader.WaveFormat.Encoding}");
+        Debug.WriteLine($"    Bits: {waveReader.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"    Channels: {waveReader.WaveFormat.Channels}");
+        Debug.WriteLine($"    Blockalign: {waveReader.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"    Bytes per Second: {waveReader.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
         waveReader.Close();
 
-        Debug.WriteLine($"Translate file {picker.FullPath} with deepgram");
         var credentials = new Credentials("9bc2b8137471bdc642b5cb4b7c29c6e960462a2e");
         // credentials.ApiUrl = @"https://api.deepgram.com";
         var deepgramClient = new DeepgramClient(credentials);
@@ -325,6 +329,31 @@ public partial class MainPage : ContentPage
     #region nAudio Event Handling
     int iBufferCounter = 0;
 
+    private void OnDataAvailablecConvert(object sender, WaveInEventArgs e)
+    {
+        short[] convertedbuffer = new short[e.Buffer.Length];
+        iBufferCounter += 1;
+        Debug.WriteLine($"Receiving Data Package no: {iBufferCounter} with length {e.Buffer.Length}");
+        WaveBuffer n = new WaveBuffer(e.Buffer);
+        Debug.WriteLine($"Als Floatbuffer: {n.FloatBuffer.Count()}");
+
+        int converBufferCounter = 0;
+        for (int i = 0; i < n.FloatBuffer.Count(); i++)
+        {
+            //simple average to collapse 2 channels into 1
+            float mono = (float)((double)n.FloatBuffer[i]; // + (double)n.FloatBuffer[i + 1]); // / 2;
+            //convert (-1, 1) range int to short
+            short sixteenbit = (short)(mono * 32767);
+            convertedbuffer[i] = sixteenbit;
+            converBufferCounter++;
+            //Debug.Write($"{i}: {n.FloatBuffer[i]}");
+        }
+        //    //short[] dest = n.ShortBuffer;
+        Debug.Write($"{iBufferCounter}: {convertedbuffer.Length}");
+
+        _waveWriter.WriteData(convertedbuffer, 0, convertedbuffer.Length);
+    }
+
     private void OnDataAvailable(object sender, WaveInEventArgs e)
     {
 
@@ -348,13 +377,6 @@ public partial class MainPage : ContentPage
         byte[] sendBuffer = new byte[e.Buffer.Length];
         _deepgramLive.SendData(sendBuffer);
         Task.Delay(50).Wait();
-    }
-    private void OnDataAvailablecConvert(object sender, WaveInEventArgs e)
-    {
-        byte[] convertedbuffer = new byte[e.Buffer.Length];
-        iBufferCounter += 1;
-        Debug.WriteLine($"Receiving Data Package no: {iBufferCounter} with length {e.Buffer.Length}");
-
     }
     private void OnRecordginStopped(object sender, StoppedEventArgs e)
     {
