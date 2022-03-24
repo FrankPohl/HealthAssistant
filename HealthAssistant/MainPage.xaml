@@ -5,7 +5,7 @@
              BackgroundColor="{DynamicResource SecondaryColor}">
 
     <ScrollView>
-        <Grid RowSpacing="5" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
+        <Grid RowSpacing="5" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*"
               Padding="{OnPlatform iOS='30,60,30,30', Default='30'}" >
             <Button Grid.Row="0"
                 Text="Init Deepgram"
@@ -17,8 +17,8 @@
             <Button Text="Restart Deepgram" Grid.Row="5" Clicked="OnReOpenDeepgramConnectionClicked"/>
             <Button Text="Translate file with deepgram" Grid.Row="6" Clicked="OnTranslateFileClicked"/>
             <Button Text="Convert file (Sample from stackoverflow)" Grid.Row="7" Clicked="OnConvertFileClicked"/>
-            <Label Text="Status" Grid.Row="8"/>
-            <Label x:Name="Status" Grid.Row="8" MaxLines="20" />
+            <Button Text="Convert file (My try)" Grid.Row="8" Clicked="OnConvertMyFileClicked"/>
+            <Label x:Name="Status" Grid.Row="9" MaxLines="20" />
         </Grid>
     </ScrollView>
 </ContentPage>

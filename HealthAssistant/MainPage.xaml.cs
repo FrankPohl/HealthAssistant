@@ -10,6 +10,8 @@ using Deepgram.Logger;
 using Serilog;
 using System.Net.WebSockets;
 using NAudio.Wave.SampleProviders;
+using NAudio.Utils;
+using NAudio.Codecs;
 
 namespace HealthAssistant;
 
@@ -45,28 +47,42 @@ public partial class MainPage : ContentPage
     #endregion
 
     #region UI events
+    /// <summary>
+    /// Stop the recording and dispose all objects
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
+
     private async void OnStopAudioClicked(object sender, EventArgs e)
     {
         Debug.WriteLine($"OnStopAudioClicked");
 
+        if (_waveWriter != null)
+        {
+            _waveWriter.Close();
+            _waveWriter.Dispose();
+        }
         if (_waveIn != null)
         {
             _waveIn.StopRecording();
+            _waveIn.Dispose();
         }
-        try
-        {
-            if (_deepgramLive != null)
-            {
-                Debug.WriteLine($"DeepGram State {_deepgramLive.State()}");
-                await _deepgramLive.FinishAsync();
-                await _deepgramLive.StopConnectionAsync();
-            }
-        }
-        catch (Exception)
-        {
+        // we do not stop deepgram but wait for it to finish on its own
+        //try
+        //{
+        //    if (_deepgramLive != null)
+        //    {
+        //        Debug.WriteLine($"DeepGram State {_deepgramLive.State()}");
+        //        await _deepgramLive.FinishAsync();
+        //        await _deepgramLive.StopConnectionAsync();
+        //        _deepgramLive.Dispose();
+        //    }
+        //}
+        //catch (Exception)
+        //{
 
-            Debug.WriteLine("_deepgramLive.FinishAsync crashed");
-        }
+        //    Debug.WriteLine("_deepgramLive.FinishAsync crashed");
+        //}
     }
 
     private async void OnReOpenDeepgramConnectionClicked(object sender, EventArgs e)
@@ -75,6 +91,11 @@ public partial class MainPage : ContentPage
         
         await _deepgramLive.StartConnectionAsync(_options);
     }
+    /// <summary>
+    /// Store audio input in a file without any conversion
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
 
     private void OnStartRecognitionAndSaveClicked(object sender, EventArgs e)
     {
@@ -107,6 +128,13 @@ public partial class MainPage : ContentPage
         _waveIn.StartRecording();
     }
 
+    /// <summary>
+    /// Record the audio from the Mic and store it in a file.
+    /// The input is converted to 16 bit PCM and downsampled to 16000
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
+
     private void OnStartAudioWithConversionClicked(object sender, EventArgs e)
     {
         Debug.WriteLine($"OnStartAudioWithConversionClicked");
@@ -130,17 +158,27 @@ public partial class MainPage : ContentPage
         Debug.WriteLine($"Waveformat from device");
         Debug.WriteLine($"   Samplerate: {_waveIn.WaveFormat.SampleRate}");
         Debug.WriteLine($"   Encoding: {_waveIn.WaveFormat.Encoding}");
-        Debug.WriteLine($"   Bits: {_waveIn.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"   Bits per sample: {_waveIn.WaveFormat.BitsPerSample}");
         Debug.WriteLine($"   Channels: {_waveIn.WaveFormat.Channels}");
         Debug.WriteLine($"   Blockalign: {_waveIn.WaveFormat.BlockAlign}");
         Debug.WriteLine($"   Bytes per Second: {_waveIn.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
-
-        var waveOutFormat = new WaveFormat(sampleRate: 16000, channels: 1);
-
-        _waveWriter = new WaveFileWriter($@"C:\Temp\TestUnconverted-{waveOutFormat.SampleRate}-{waveOutFormat.Encoding}-{waveOutFormat.Channels}.wav", waveOutFormat);
+        // then next waveOutFormat this call should work with ConvertArray4
+        var waveOutFormat = new WaveFormat(sampleRate: _waveIn.WaveFormat.SampleRate / 3, channels: 2);
+        // then next waveOutFormat works with ConvertArray2 (works with file) 
+        // var waveOutFormat = new WaveFormat(sampleRate: _waveIn.WaveFormat.SampleRate, channels: 2);
+        // the next call works with ConvertArray3 (works with file) 
+        // _waveWriter = new WaveFileWriter($@"C:\Temp\TestConverted-{waveOutFormat.SampleRate}-{waveOutFormat.Encoding}-{waveOutFormat.Channels}.wav", _waveIn.WaveFormat);
+        _waveWriter = new WaveFileWriter($@"C:\Temp\TestConverted-{waveOutFormat.SampleRate}-{waveOutFormat.Encoding}-{waveOutFormat.Channels}.wav", waveOutFormat);
         _waveIn.StartRecording();
 
     }
+
+    /// <summary>
+    /// Convert audio from a wav file and store the conversion in a  new file.
+    /// This is an example I found on stackoverflow
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
 
     private async void OnConvertFileClicked(object sender, EventArgs e)
     {
@@ -234,6 +272,12 @@ public partial class MainPage : ContentPage
         _waveIn.StartRecording();
     }
 
+    /// <summary>
+    /// Transalte the content of a file with deepgram
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
+
     private async void OnTranslateFileClicked(object sender, EventArgs e)
     {
         Debug.WriteLine($"OnTranslateFileClicked");
@@ -244,6 +288,7 @@ public partial class MainPage : ContentPage
             return;
         }
         Debug.WriteLine($"Translate file {picker.FullPath} with deepgram");
+        DispatchStatusMsg($"Translate file {picker.FullPath} with deepgram");
         var waveReader = new WaveFileReader(picker.FullPath);
         Debug.WriteLine($"Input file Wave format");
         Debug.WriteLine($"    Samplerate: {waveReader.WaveFormat.SampleRate}");
@@ -266,10 +311,15 @@ public partial class MainPage : ContentPage
     }
 
 
+    /// <summary>
+    /// Initialize the deepgram client. Must be called before using deepgram
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
+
     private async void OnInitDeepgramClicked(object sender, EventArgs e)
 	{
         Debug.WriteLine($"OnInitDeepgramClicked");
-
         var credentials = new Credentials("9bc2b8137471bdc642b5cb4b7c29c6e960462a2e");
         credentials.ApiUrl = @"https://api.deepgram.com";
         var deepgramClient = new DeepgramClient(credentials);
@@ -277,8 +327,8 @@ public partial class MainPage : ContentPage
         {
             Punctuate = true,
             Diarize = true,
-            Encoding = Deepgram.Common.AudioEncoding.MuLaw,
-            Channels = 1,
+            Encoding = Deepgram.Common.AudioEncoding.Linear16,
+            Channels = 2,
             SampleRate = 16000
         };
         _deepgramLive = deepgramClient.CreateLiveTranscriptionClient();
@@ -287,6 +337,62 @@ public partial class MainPage : ContentPage
         _deepgramLive.ConnectionOpened += DeepgramLive_ConnectionOpened;
         _deepgramLive.ConnectionError += DeepgramLive_ConnectionError;
         await _deepgramLive.StartConnectionAsync(_options);
+    }
+
+    /// <summary>
+    /// Convert audio from a wav file and store the conversio in a  new file
+    /// </summary>
+    /// <param name="sender">Not used</param>
+    /// <param name="e">Not used</param>
+    private async void OnConvertMyFileClicked(object sender, EventArgs e)
+    {
+        var picker = await FilePicker.PickAsync();
+        if (picker == null)
+        {
+            return;
+        }
+        Debug.WriteLine($"Convert {picker.FullPath}");
+
+        byte[] buffer = new byte[384000];
+        var reader = new NAudio.Wave.WaveFileReader(picker.FullPath);
+        _waveIn = new WasapiCapture();
+        _waveIn.WaveFormat = reader.WaveFormat;
+        Debug.WriteLine($"Input file Wave format");
+        Debug.WriteLine($"    Samplerate: {reader.WaveFormat.SampleRate}");
+        Debug.WriteLine($"    Encoding: {reader.WaveFormat.Encoding}");
+        Debug.WriteLine($"    Bits: {reader.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"    Channels: {reader.WaveFormat.Channels}");
+        Debug.WriteLine($"    Blockalign: {reader.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"    Bytes per Second: {reader.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
+        // this waveout works with ConvertArray2
+        //var waveOutFormat = new WaveFormat(sampleRate: reader.WaveFormat.SampleRate, channels: 2);
+        // this waveout works with ConvertArray4
+        var waveOutFormat = new WaveFormat(sampleRate: reader.WaveFormat.SampleRate /3, channels: 2);
+        string convertedFileName = $@"{Path.GetDirectoryName(picker.FullPath)}\\MyConversion-{waveOutFormat.SampleRate}-{waveOutFormat.Encoding}-{waveOutFormat.Channels}.wav";
+        var writer = new NAudio.Wave.WaveFileWriter(convertedFileName, waveOutFormat);
+        Debug.WriteLine($"Outout file Wave format");
+        Debug.WriteLine($"    Samplerate: {writer.WaveFormat.SampleRate}");
+        Debug.WriteLine($"    Encoding: {writer.WaveFormat.Encoding}");
+        Debug.WriteLine($"    Bits: {writer.WaveFormat.BitsPerSample}");
+        Debug.WriteLine($"    Channels: {writer.WaveFormat.Channels}");
+        Debug.WriteLine($"    Blockalign: {writer.WaveFormat.BlockAlign}");
+        Debug.WriteLine($"    Bytes per Second: {writer.WaveFormat.AsStandardWaveFormat().AverageBytesPerSecond}");
+
+        int i = 1;
+        int bytes = 1;
+        while (bytes > 0)
+        {
+            bytes = reader.Read(buffer, 0, buffer.Length);
+            Debug.WriteLine($"Buffers converted {i}");
+            var convertedBuffer = ConvertArray4(buffer, bytes);
+            writer.Write(convertedBuffer, 0, convertedBuffer.Length);
+            i++;
+        }
+        reader.Close();
+        reader.Dispose();
+        writer.Close();
+        writer.Dispose();
+
     }
 
     #endregion
@@ -307,6 +413,7 @@ public partial class MainPage : ContentPage
     private void DeepgramLive_TranscriptReceived(object sender, TranscriptReceivedEventArgs e)
     {
         Debug.WriteLine("Transcript received");
+        Debug.WriteLine($"Alternatives First: {e.Transcript.Channel.Alternatives.First().Transcript}");
         {
             if (e.Transcript.IsFinal &&
                 e.Transcript.Channel.Alternatives.First().Transcript.Length > 0)
@@ -327,37 +434,103 @@ public partial class MainPage : ContentPage
     #endregion
 
     #region nAudio Event Handling
-    int iBufferCounter = 0;
 
-    private void OnDataAvailablecConvert(object sender, WaveInEventArgs e)
+    /// <summary>
+    /// Convert an array 
+    /// </summary>
+    /// <param name="Input"></param>
+    /// <param name="NoOfBytes"></param>
+    /// <returns></returns>
+    private byte[] ConvertArray2(byte[] Input, int NoOfBytes)
     {
-        short[] convertedbuffer = new short[e.Buffer.Length];
-        iBufferCounter += 1;
-        Debug.WriteLine($"Receiving Data Package no: {iBufferCounter} with length {e.Buffer.Length}");
-        WaveBuffer n = new WaveBuffer(e.Buffer);
-        Debug.WriteLine($"Als Floatbuffer: {n.FloatBuffer.Count()}");
-
-        int converBufferCounter = 0;
-        for (int i = 0; i < n.FloatBuffer.Count(); i++)
+        Debug.WriteLine($"Called ConvertArray2 auf PCM");
+        byte[] output = new byte[NoOfBytes / 2];
+        WaveBuffer sourceWaveBuffer = new WaveBuffer(Input);
+        WaveBuffer destWaveBuffer = new WaveBuffer(output);
+        for (int n = 0; n < NoOfBytes / 4; n += 1)
         {
-            //simple average to collapse 2 channels into 1
-            float mono = (float)((double)n.FloatBuffer[i]; // + (double)n.FloatBuffer[i + 1]); // / 2;
-            //convert (-1, 1) range int to short
-            short sixteenbit = (short)(mono * 32767);
-            convertedbuffer[i] = sixteenbit;
-            converBufferCounter++;
-            //Debug.Write($"{i}: {n.FloatBuffer[i]}");
+            float sample32 = sourceWaveBuffer.FloatBuffer[n];
+            if (sample32 > 1.0f)
+                sample32 = 1.0f;
+            if (sample32 < -1.0f)
+                sample32 = -1.0f;
+            destWaveBuffer.ShortBuffer[n] = (short)(sample32 * 32767);
         }
-        //    //short[] dest = n.ShortBuffer;
-        Debug.Write($"{iBufferCounter}: {convertedbuffer.Length}");
-
-        _waveWriter.WriteData(convertedbuffer, 0, convertedbuffer.Length);
+        return output;
     }
 
+
+    private byte[] ConvertArray4(byte[] Input, int NoOfBytes)
+    {
+        Debug.WriteLine($"Called ConvertArray4 (Resample by 1/3 and to PCM");
+        byte[] output = new byte[NoOfBytes / 2];
+        byte[] resampledOutput = new byte[NoOfBytes / 6];
+        WaveBuffer sourceWaveBuffer = new WaveBuffer(Input);
+        WaveBuffer outputWaveBuffer = new WaveBuffer(output);
+        WaveBuffer resampledWaveBuffer = new WaveBuffer(resampledOutput);
+        int resampledValueCounter = 0;
+        int outputCounter = 0;
+        var resampleSourceSamples = new short[3];
+        for (int n = 0; n < NoOfBytes / 4; n += 1)
+        {
+            float sample32 = sourceWaveBuffer.FloatBuffer[n];
+            if (sample32 > 1.0f)
+                sample32 = 1.0f;
+            if (sample32 < -1.0f)
+                sample32 = -1.0f;
+            outputWaveBuffer.ShortBuffer[n] = (short)(sample32 * 32767);
+            resampleSourceSamples[resampledValueCounter] = (short)(sample32 * 32767);
+            resampledValueCounter++;
+            if (resampledValueCounter == 3)
+            {
+                resampledValueCounter = 0;
+                short resample = (short)((resampleSourceSamples[0] + resampleSourceSamples[1] + resampleSourceSamples[2]) / 3);
+                resampledWaveBuffer.ShortBuffer[outputCounter] = resample;
+                outputCounter++;
+            }
+        }
+        Debug.WriteLine($"Created out with {outputCounter} values from {NoOfBytes} input bytes");
+        return resampledOutput;
+    }
+
+    
+    private byte[] ConvertArray3(byte[] Input, int NoOfBytes)
+    {
+        Debug.WriteLine($"Called ConvertArray3, direct copy");
+        byte[] output = new byte[NoOfBytes];
+
+        for (int n = 0; n < NoOfBytes; n += 1)
+        {
+            output[n] = Input[n];
+        }
+        return output;
+    }
+
+    int iBufferCounter = 0;
+
+
+    /// <summary>
+    /// OnDataAvailable Event handling with conversion to PCNM and resampling from 48000 to 16000
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e">Audio data in a byte buffer</param>
+    private void OnDataAvailablecConvert(object sender, WaveInEventArgs e)
+    {
+        DispatchStatusMsg($"OnDataAvailable for audio with conversion");
+        var convertedBuffer = ConvertArray4(e.Buffer, e.BytesRecorded);
+        _waveWriter.Write(convertedBuffer, 0, convertedBuffer.Length);
+    }
+
+    /// <summary>
+    /// OnDataAvailable Event handling with any conversion
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e">Audio data in a byte buffer</param>
     private void OnDataAvailable(object sender, WaveInEventArgs e)
     {
 
-        Debug.WriteLine($"Storage package: {iBufferCounter} with length {e.Buffer.Length}");
+        DispatchStatusMsg($"OnDataAvailable for audio with conversion");
+        Debug.WriteLine($"OnDataAvailable for audio input without any conversion");
         _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
 
         int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
@@ -367,13 +540,24 @@ public partial class MainPage : ContentPage
             _waveIn.StopRecording();
         }
     }
+
+    /// <summary>
+    /// OnDataAvailable Event handling with conversion and sending to deepgram
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e">Audio data in a byte buffer</param>
     private void OnDataAvailablecSend(object sender, WaveInEventArgs e)
+    {
+        if (_deepgramLive == null)
         {
-            iBufferCounter += 1;
-        Debug.WriteLine($"Sending Data Package no: {iBufferCounter} with length {e.Buffer.Length}");
-        //  Hav to transcode the data
-        // Write to file to show that audio in worked
-        // write tp deepgram
+            DispatchStatusMsg($"Initlaize deepgrma first");
+            return;
+        }
+        iBufferCounter += 1;
+        Debug.WriteLine($"Sending Data Package no: {iBufferCounter} with length {e.BytesRecorded}");
+        DispatchStatusMsg($"OnDataAvailable for audio with conversion and send to deepgram");
+        var convertedBuffer = ConvertArray4(e.Buffer, e.BytesRecorded);
+        _waveWriter.Write(convertedBuffer, 0, convertedBuffer.Length);
         byte[] sendBuffer = new byte[e.Buffer.Length];
         _deepgramLive.SendData(sendBuffer);
         Task.Delay(50).Wait();
@@ -384,110 +568,9 @@ public partial class MainPage : ContentPage
         _waveWriter.Dispose();
         Debug.WriteLine("Audio In stopped");
         DispatchStatusMsg($"Audio In stopped");
-
     }
+
     #endregion
 
-//    int sourceSamples = e.Buffer.Length / 4;
-//    //WaveBuffer sourceWaveBuffer = new WaveBuffer(e.Buffer);
-//    //WaveBuffer destWaveBuffer = new WaveBuffer(convertedbuffer);
-
-//    // Code mainly taken from
-//    // https://www.codeproject.com/articles/501521/how-to-convert-between-most-audio-formats-in-net
-//    WaveBuffer n = new WaveBuffer(e.Buffer);
-//    //short[] dest = n.ShortBuffer;
-
-
-//    float[] floats;
-
-//    //a variable to flag the mod 3-ness of the current sample
-//    //we're mapping 48000 --> 16000, so we need to average 3 source
-//    //samples to make 1 output sample
-//    var arity = -1;
-//    floats = n.FloatBuffer;
-//        short[] convertedBuffer = new short[n.FloatBuffer.Length / 3];
-//    var runningSamples = new short[3];
-//    iBufferCounter = 0;
-//        int fcount = 0;
-//        while (fcount<n.FloatBuffer.Count())
-//        {
-
-//            //simple average to collapse 2 channels into 1
-//            float mono = (float)((double)floats[fcount] + (double)floats[fcount]) / 2;
-//    Debug.WriteLine($"Mon: {mono}");
-//            //convert (-1, 1) range int to short
-//            short sixteenbit = (short)(mono * 32767);
-
-//    //the input is 48000Hz and the output is 16000Hz, so we need 1/3rd of the data points
-//    //so save up 3 running samples and then mix and write to the file
-//    arity = (arity + 1) % 3;
-
-//            runningSamples[arity] = sixteenbit;
-
-//            //on the third of 3 running samples
-//            if (arity == 2)
-//            {
-//                //simple average of the 3 and put in the 0th position
-//                runningSamples[0] = (short) (((int) runningSamples[0] + (int) runningSamples[1] + (int) runningSamples[2]) / 3);
-//    Debug.WriteLine($"Sample in buffer: {runningSamples[0]}");
-
-//                //write the one 16 bit short to the output
-
-//                // writer.WriteData(runningSamples, 0, 1);
-//                convertedBuffer[iBufferCounter] = runningSamples[0];
-//                iBufferCounter++;
-//            }
-//fcount += 2;
-//        }
-//        Debug.WriteLine($" So vile im array {iBufferCounter}");
-//_waveWriter.WriteData(convertedbuffer, 0, convertedbuffer.Length);
-//        //_deepgramLive.SendData(convertedbuffer);
-
-//        //int destOffset = 0;
-//        //for (int sample = 0; sample < sourceSamples; sample++)
-//        //{
-//        //    // adjust volume
-//        //    float sample32 = e.Buffer[sample] * 1.0f;
-//        //    // clip
-//        //    if (sample32 > 1.0f)
-//        //        sample32 = 1.0f;
-//        //    if (sample32 < -1.0f)
-//        //        sample32 = -1.0f;
-//        //    convertedbuffer[destOffset++] = (byte)(sample32 * 32767);
-//        //}
-//        //Debug.WriteLine($"Converted: {string.Join(", ", convertedbuffer)}");
-//        //Debug.WriteLine($"Sending converted data {i} with length {convertedbuffer.Length}");
-//        //_waveWriter.Write(convertedbuffer,0, convertedbuffer.Length);
-//        //Debug.WriteLine($"Converted: {string.Join(", ", dest)}");
-//        //Debug.WriteLine($"Sending converted data {i} with length {dest.Length}");
-//        //_waveWriter.Write((dest, 0, dest.Length);
-
-//        //for (int sample = 0; sample < sourceSamples; sample++)
-//        //{
-//        //    // adjust volume
-//        //    // clip
-//        //    if (sample32 > 1.0f)
-//        //        sample32 = 1.0f;
-//        //    if (sample32 < -1.0f)
-//        //        sample32 = -1.0f;
-//        //    destWaveBuffer[destOffset++] = (short)(sample32 * 32767);
-//        //}
-
-//        // Write to file to show that audio in worked
-//        // I got this from an NAudio sample 
-//        // _waveWriter.Write(e.Buffer, 0, e.BytesRecorded);
-
-//        //int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
-//        //if (secondsRecorded >= 60)
-//        //{
-//        //    Debug.WriteLine("Stop automatically after 60 seconds ");
-//        //    _waveIn.StopRecording();
-//        //}
-
-//        // write tp deepgram
-//        //_deepgramLive.SendData(convertedbuffer);
-//        //Task.Delay(50).Wait();
-
-
-}
+    }
 
