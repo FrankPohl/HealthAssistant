@@ -328,6 +328,9 @@ public partial class MainPage : ContentPage
             Punctuate = true,
             Diarize = true,
             Encoding = Deepgram.Common.AudioEncoding.Linear16,
+            MultiChannel = true,
+            Utterances = true,
+            Language = "en-US",
             Channels = 2,
             SampleRate = 16000
         };
