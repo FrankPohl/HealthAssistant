@@ -321,7 +321,6 @@ public partial class MainPage : ContentPage
 	{
         Debug.WriteLine($"OnInitDeepgramClicked");
         var credentials = new Credentials("9bc2b8137471bdc642b5cb4b7c29c6e960462a2e");
-        credentials.ApiUrl = @"https://api.deepgram.com";
         var deepgramClient = new DeepgramClient(credentials);
         _options = new LiveTranscriptionOptions()
         {
@@ -560,10 +559,8 @@ public partial class MainPage : ContentPage
         Debug.WriteLine($"Sending Data Package no: {iBufferCounter} with length {e.BytesRecorded}");
         DispatchStatusMsg($"OnDataAvailable for audio with conversion and send to deepgram");
         var convertedBuffer = ConvertArray4(e.Buffer, e.BytesRecorded);
+        _deepgramLive.SendData(convertedBuffer);
         _waveWriter.Write(convertedBuffer, 0, convertedBuffer.Length);
-        byte[] sendBuffer = new byte[e.Buffer.Length];
-        _deepgramLive.SendData(sendBuffer);
-        Task.Delay(50).Wait();
     }
     private void OnRecordginStopped(object sender, StoppedEventArgs e)
     {
