@@ -16,9 +16,9 @@ namespace HealthAssistant.ViewModels
         private InputItemViewModel _inputItem = new InputItemViewModel() { MeasurementType = Measurement.NotSet, MeasurementDateTime = DateTime.MinValue };
         public ObservableCollection<MessageDetailViewModel> Messages { get; }
         public ObservableCollection<MeasuredItem> BloodPressureList { get; private set; }
-        public ObservableCollection<MeasuredItem> PulseList { get; private set; }
         public ObservableCollection<MeasuredItem> GlucoseList { get; private set; }
-        public ObservableCollection<InputItemViewModel> TemperatureList { get; set; }
+        public ObservableCollection<MeasuredItem> PulseList { get; private set; }
+        public ObservableCollection<MeasuredItem> TemperatureList { get; set; }
         public ObservableCollection<MeasuredItem> WeightList { get; private set; }
 
         public IAsyncRelayCommand StartRecognitionCommand { get; }
@@ -32,7 +32,11 @@ namespace HealthAssistant.ViewModels
             StartRecognitionCommand = new AsyncRelayCommand(StartRecognitionAsync);
             ProcessTextCommand = new AsyncRelayCommand<string>(ProcessCommandAsync);
             _recognizer = new SpeechRecognizer();
-            TemperatureList = new ObservableCollection<InputItemViewModel>();
+            BloodPressureList = new ObservableCollection<MeasuredItem>();
+            GlucoseList = new ObservableCollection<MeasuredItem>();
+            PulseList = new ObservableCollection<MeasuredItem>();
+            TemperatureList = new ObservableCollection<MeasuredItem>();
+            WeightList = new ObservableCollection<MeasuredItem>();
             WireUpRecognizerEvents();
             Messages = new ObservableCollection<MessageDetailViewModel>();
             _evaluator = new TextEvaluation();
@@ -88,11 +92,13 @@ namespace HealthAssistant.ViewModels
         private void _recognizer_RecognizerStoppedListening(object sender, EventArgs e)
         {
             IsListening = false;
+            AppState = "Recognizer id not listening.";
             AddSeverMessage("Recording automatically stopped. Click on Mic to restart");
         }
 
         private void _recognizer_RecognizerException(object sender, RecognizerError e)
         {
+            AppState = $"A server exception occured {e}. restart the app.";
             Debug.WriteLine($"_recognizer_RecognizerException {e}");
         }
         private void AddSeverMessage(string Message)
@@ -182,7 +188,7 @@ namespace HealthAssistant.ViewModels
                             PulseList.Add(_inputItem.Item);
                             break;
                         case Measurement.Temperature:
-                            TemperatureList.Add(_inputItem);
+                            TemperatureList.Add(_inputItem.Item);
                             break;
                         case Measurement.Weight:
                             WeightList.Add(_inputItem.Item);
@@ -460,6 +466,7 @@ namespace HealthAssistant.ViewModels
 
         private void _recognizer_RecognizerStartedListening(object sender, EventArgs e)
         {
+            AppState = "Speech recognizer is listening.";
             Debug.WriteLine("RecognizerStartListenin");
         }
 
@@ -474,22 +481,30 @@ namespace HealthAssistant.ViewModels
             Messages.Clear();
             Messages.Add(new MessageDetailViewModel() { Sender = MessageSender.Server, Message = $"{WelcomeMessage}" });
             var bpList = await _dataStore.GetItemsAsync(Measurement.BloodPressure);
-            BloodPressureList = new ObservableCollection<MeasuredItem>();
-            foreach (var bp in bpList)
+            foreach (var item in bpList)
             {
-                BloodPressureList.Add(bp);
+                BloodPressureList.Add(item);
+            }
+            var glucoseList = await _dataStore.GetItemsAsync(Measurement.Weight);
+            foreach (var item in glucoseList)
+            {
+                GlucoseList.Add(item);
+            }
+            var pulseList = await _dataStore.GetItemsAsync(Measurement.Pulse);
+            foreach (var item in pulseList)
+            {
+                PulseList.Add(item);
             }
             var tempList = await _dataStore.GetItemsAsync(Measurement.Temperature);
             foreach (var item in tempList)
             {
-                TemperatureList.Add(new InputItemViewModel(item));
+                TemperatureList.Add(item);
             }
-            var pulseList = await _dataStore.GetItemsAsync(Measurement.Pulse);
-            PulseList = new ObservableCollection<MeasuredItem>(pulseList);
-            var glucseoList = await _dataStore.GetItemsAsync(Measurement.Weight);
-            WeightList = new ObservableCollection<MeasuredItem>(glucseoList);
             var weightList = await _dataStore.GetItemsAsync(Measurement.Weight);
-            WeightList = new ObservableCollection<MeasuredItem>(weightList);
+            foreach (var item in weightList)
+            {
+                WeightList.Add(item);
+            }
             IsBusy = false;
         }
 

@@ -93,6 +93,7 @@ namespace HealthAssistant.Services
             var fileName = CreateFileNameForType(item.MeasurementType);
             using (var streamWriter = File.AppendText(fileName))
             {
+                item.Id = Guid.NewGuid().ToString();
                 await streamWriter.WriteLineAsync(ConvertItemToStorageString(item));
             }
             return await Task.FromResult(true);
