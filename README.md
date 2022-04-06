@@ -1,13 +1,16 @@
 # Health Assistant
-Using Deepgram SDk with direct speech input from Audio in a MAUI app.
-It was intended to provide an app to put in health data in a natrual language dialog.
+A MAUI App to enter health data with speech input. The speech input is transformed into processable text with the DeepGram services.
 
-# Technical details
-I'm using different Nuget packages. Mainly these
- - NAudio to get the audio from the microphone
- - Deepgram to connect to the deepgram service
- 
- 
-# Problems
-I do not get any answer from the deepgram SDK. I do not know whether something wsa processed or not.
-Reopening the connection after close is alos not working as epxected but raises an error.
+## General Info
+Using DeepGram as the speech recognition in a MAUI Windows app.
+
+## Technical details
+To connect the audio from the microphone I'm unsing NAudio. The input is deirctly sen dto the DeepGram service. This is doen with the Deepgram .NET SDK.
+
+### Why Deepgram
+Very fast and low latency
+Easy to switch recognition languages
+
+
+### And why not
+Bandwith (I have to take care of not sending silence data packages to DeepGram on my own 

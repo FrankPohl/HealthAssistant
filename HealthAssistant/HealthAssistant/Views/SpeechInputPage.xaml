@@ -1,0 +1,101 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:helpers="clr-namespace:HealthAssistant.Helpers"
+             x:Class="HealthAssistant.Views.SpeechInputPage"
+             BackgroundColor="{DynamicResource SecondaryColor}">
+    <ContentPage.Resources>
+        <helpers:StateToImageConverter x:Key="StateToImageConverter" />
+        <DataTemplate x:Key="UserTemplate">
+            <Grid Margin="0" Padding="0" RowSpacing="0" >
+                <StackLayout
+                        Margin="6"
+                        Padding="3"
+                        BackgroundColor="#4286f4"
+                       >
+                    <Label HorizontalOptions="End"  Text="{Binding Message}" MaxLines="4"   TextColor="White" LineBreakMode="WordWrap" />
+                </StackLayout>
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="ServerTemplate">
+            <Grid Margin="0,3,0,3" Padding="0" RowSpacing="0">
+                <StackLayout
+                        Margin="6"
+                        Padding="3"
+                        BackgroundColor="#b9bfc9"
+                        >
+                    <Label HorizontalOptions="Start" Text="{Binding Message}"  MaxLines="4" TextColor="Black" LineBreakMode="WordWrap"/>
+                </StackLayout>
+            </Grid>
+        </DataTemplate>
+
+        <DataTemplate x:Key="BloodPressureTemplate">
+            <ViewCell>
+                <StackLayout Orientation="Horizontal"
+                        Margin="6"
+                        Padding="3"
+                        BackgroundColor="#4286f4"
+                       >
+                    <Label Text="{Binding MeasurementDateTime}" TextColor="White" />
+                    <Label Text="{Binding SysValue}" TextColor="White" />
+                    <Label Text="{Binding DiaValue}" TextColor="White" />
+                </StackLayout>
+            </ViewCell>
+        </DataTemplate>
+        <DataTemplate x:Key="MeasurementTemplate">
+            <ViewCell>
+                <StackLayout Orientation="Horizontal"
+                        Margin="6"
+                        Padding="3"
+                        BackgroundColor="#4286f4"
+                       >
+                    <Label Text="{Binding MeasurementDateTime}" TextColor="White" />
+                    <Label Text="{Binding Measurement}" TextColor="White" />
+                </StackLayout>
+            </ViewCell>
+        </DataTemplate>
+        
+        <helpers:TemplateSelector
+                x:Key="ChatDataTemplateSelector"
+                ServerTemplate="{StaticResource ServerTemplate}"
+                UserTemplate="{StaticResource UserTemplate}" />
+
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="*,*,*,*,*, 48, Auto"
+              Padding="{OnPlatform iOS='30,60,30,30', Default='30'}">
+
+        <!-- The visulization -->
+        <StackLayout Grid.Row="0" IsVisible="{Binding ShowBloodPressureList}">
+            <Label Text="Blood pressure"/>
+            <ListView ItemsSource="{Binding BloodPressureList, Mode=OneWay}" ItemTemplate="{StaticResource BloodPressureTemplate}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="1" IsVisible="{Binding ShowPulseList}">
+            <Label Text="Pulse"/>
+            <ListView ItemsSource="{Binding PulseList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="2" IsVisible="{Binding ShowGlucoseList}">
+            <Label Text="Glucose"/>
+            <ListView ItemsSource="{Binding GlucoseList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="3" IsVisible="{Binding ShowTemperatureList}">
+            <Label Text="Temperature"/>
+            <ListView ItemsSource="{Binding TemperatureList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
+        </StackLayout>
+        <StackLayout Grid.Row="4" IsVisible="{Binding ShowWeightList}">
+            <Label Text="Weight"/>
+            <ListView ItemsSource="{Binding WeightList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
+        </StackLayout>
+
+        <!-- Chat input option -->
+        <CollectionView Grid.Row="0" Grid.RowSpan="5"    CollectionView.ItemTemplate="{StaticResource ChatDataTemplateSelector}" 
+          ItemsSource="{Binding Messages, Mode=OneWay}" ItemsUpdatingScrollMode="KeepLastItemInView" IsVisible="{Binding ShowInput}"/>
+            <Grid Grid.Row="5" ColumnDefinitions="*,Auto, Auto">
+                <Entry Grid.Column="0" x:Name="TextInput" ClearButtonVisibility="WhileEditing" Placeholder="Type in your input here or use speech input (click on Mic to start listening)." VerticalOptions="Center"/>
+            <Button Grid.Column="1" Text="Process Text" Command="{Binding ProcessTextCommand, Mode=OneWay}" CommandParameter="{Binding Source={x:Reference TextInput}, Path=Text}" Margin="12,0,12,0" VerticalOptions="Center"/>
+             <ImageButton Grid.Column="2" Command="{Binding StartRecognitionCommand, Mode=OneWay}"  Source="{Binding IsListening, Converter={StaticResource StateToImageConverter}}" HeightRequest="44" WidthRequest="44" BackgroundColor="Transparent" Aspect="Fill" Padding="0"/>
+        </Grid>
+        <Label Grid.Row="6" Margin="0,0,0,6" Text= "{Binding AppState, Mode=OneWay}" TextColor="{StaticResource PrimaryColor}" HorizontalOptions="Center"/>
+
+    </Grid>
+</ContentPage>
