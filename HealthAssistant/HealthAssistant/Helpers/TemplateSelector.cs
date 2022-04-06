@@ -15,7 +15,6 @@ namespace HealthAssistant.Helpers
         protected override DataTemplate OnSelectTemplate(object item, BindableObject container)
         {
             var model = item as MessageDetailViewModel;
-            Debug.WriteLine("Template Selector");
             switch (model.Sender)
             {
                 case MessageSender.User:

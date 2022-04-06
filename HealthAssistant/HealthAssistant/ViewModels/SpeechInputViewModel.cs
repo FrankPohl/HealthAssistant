@@ -15,44 +15,64 @@ namespace HealthAssistant.ViewModels
         TextEvaluation _evaluator;
         private InputItemViewModel _inputItem = new InputItemViewModel() { MeasurementType = Measurement.NotSet, MeasurementDateTime = DateTime.MinValue };
         public ObservableCollection<MessageDetailViewModel> Messages { get; }
-        public ObservableCollection<InputItemViewModel> BloodPressureList { get; }
-        public ObservableCollection<InputItemViewModel> PulseList { get; }
-        public ObservableCollection<InputItemViewModel> GlucoseList { get; }
-        public ObservableCollection<InputItemViewModel> TemperatureList { get; }
-        public ObservableCollection<InputItemViewModel> WeightList { get; }
+        public ObservableCollection<MeasuredItem> BloodPressureList { get; private set; }
+        public ObservableCollection<MeasuredItem> PulseList { get; private set; }
+        public ObservableCollection<MeasuredItem> GlucoseList { get; private set; }
+        public ObservableCollection<InputItemViewModel> TemperatureList { get; set; }
+        public ObservableCollection<MeasuredItem> WeightList { get; private set; }
 
         public IAsyncRelayCommand StartRecognitionCommand { get; }
         public IAsyncRelayCommand<string> ProcessTextCommand { get; }
 
 
-        private string WelcomeMessage = $"Hello. {Environment.NewLine}You can enter your heart rate, glucose, weight, or blood pressure by voice. {Environment.NewLine}For example, say  'My pulse was 73 at 9:30 am today.";
+        private string WelcomeMessage = $"Hello. {Environment.NewLine}You can enter your heart rate, glucose, weight, temperature or blood pressure with speech. {Environment.NewLine}Say, for example 'My temperature was 37.2 at 9:30 am today.";
         public SpeechInputViewModel()
         {
-            Debug.WriteLine("SPeechINput Constrcutor");
+            Debug.WriteLine("SPeechInput Constrcutor");
             StartRecognitionCommand = new AsyncRelayCommand(StartRecognitionAsync);
             ProcessTextCommand = new AsyncRelayCommand<string>(ProcessCommandAsync);
             _recognizer = new SpeechRecognizer();
+            TemperatureList = new ObservableCollection<InputItemViewModel>();
             WireUpRecognizerEvents();
             Messages = new ObservableCollection<MessageDetailViewModel>();
-            BloodPressureList = new ObservableCollection<InputItemViewModel>();
-            PulseList = new ObservableCollection<InputItemViewModel>();
-            TemperatureList = new ObservableCollection<InputItemViewModel>();
-            WeightList = new ObservableCollection<InputItemViewModel>();
             _evaluator = new TextEvaluation();
             _dataStore = new HealthDataStore();
         }
 
-
         private async Task StartRecognitionAsync()
         {
-            Debug.WriteLine("Start lsitening command");
-            await _recognizer.StarListening();
-            IsListening = true;
+            if  (IsListening)
+            {
+                Debug.WriteLine("Stop listening command");
+                _recognizer.StopListening();
+                IsListening = false;
+            }
+            else
+            {
+                Debug.WriteLine("Start listening command");
+                await _recognizer.StarListening();
+                if (ActiveCommand == Commands.Pause)
+                {
+                    ActiveCommand = Commands.Undefined;
+                }
+                IsListening = true;
+            }
+
         }
+
         private async Task ProcessCommandAsync(string TextInput)
         {
-            Debug.WriteLine($"Text Inut is: {TextInput} ");
-            AnalyzeText(TextInput);
+            Debug.WriteLine($"Text Inut Input as Paramter {TextInput} and property {DirectTextInput} ");
+            if (String.IsNullOrEmpty(TextInput))
+            {
+                AddClientMessage("Please enter some text for processing.");
+            }
+            else
+            {
+                AddClientMessage(TextInput);
+                AnalyzeText(TextInput, true);
+                DirectTextInput = "";
+            }
         }
 
         //// compare new info with already gathered info and ask for missing info
@@ -68,6 +88,7 @@ namespace HealthAssistant.ViewModels
         private void _recognizer_RecognizerStoppedListening(object sender, EventArgs e)
         {
             IsListening = false;
+            AddSeverMessage("Recording automatically stopped. Click on Mic to restart");
         }
 
         private void _recognizer_RecognizerException(object sender, RecognizerError e)
@@ -86,7 +107,7 @@ namespace HealthAssistant.ViewModels
         private void LogState()
         {
             Debug.WriteLine("State");
-            Debug.WriteLine($"  Actvie Command: {ActiveCommand}");
+            Debug.WriteLine($"  Active Command: {ActiveCommand}");
             Debug.WriteLine($"  Input Item Type: {_inputItem.MeasurementType}");
             Debug.WriteLine($"  Input DateTime: {_inputItem.MeasurementDateTime}");
             Debug.WriteLine($"  Input Dia: {_inputItem.DiaValue}");
@@ -120,11 +141,12 @@ namespace HealthAssistant.ViewModels
                     return "";
             }
         }
-        private void AnalyzeText(string InputText)
+        private void AnalyzeText(string InputText, bool forceAnalysis = false)
         {
             var command = _evaluator.GetCommandInText(InputText);
-            if (ActiveCommand == Commands.Pause)
+            if (command == Commands.Pause)
             {
+                ActiveCommand = Commands.Pause;
                 IsListening = false;
                 return;
             }
@@ -133,6 +155,12 @@ namespace HealthAssistant.ViewModels
                 Debug.WriteLine("Restart processing.");
                 IsListening = true;
                 ActiveCommand = Commands.Undefined;
+                return;
+            }
+
+            if (!IsListening && !forceAnalysis)
+            {
+                return;
             }
             if (_askForConfirmation)
             {
@@ -142,9 +170,31 @@ namespace HealthAssistant.ViewModels
                     LogState();
                     Debug.WriteLine("Store the item");
                     _dataStore.AddItemAsync(_inputItem.Item);
-                    AddSeverMessage($"I saved your measuremnt data for {GetMeasurementDisplayText(_inputItem.MeasurementType)}?");
+                    switch (_inputItem.MeasurementType)
+                    {
+                        case Measurement.BloodPressure:
+                            BloodPressureList.Add(_inputItem.Item);
+                            break;
+                        case Measurement.Glucose:
+                            GlucoseList.Add(_inputItem.Item);
+                            break;
+                        case Measurement.Pulse:
+                            PulseList.Add(_inputItem.Item);
+                            break;
+                        case Measurement.Temperature:
+                            TemperatureList.Add(_inputItem);
+                            break;
+                        case Measurement.Weight:
+                            WeightList.Add(_inputItem.Item);
+                            break;
+                        case Measurement.NotSet:
+                        default:
+                            break;
+                    }
+                    AddSeverMessage($"I saved your {GetMeasurementDisplayText(_inputItem.MeasurementType)} measurement. {Environment.NewLine}You can enter a new value or check the data, e.g. 'show weight'.");
                     ActiveCommand = Commands.Undefined;
                     _askForConfirmation = false;
+                    _inputItem = new InputItemViewModel();
                     return;
                 }
                 else
@@ -152,11 +202,12 @@ namespace HealthAssistant.ViewModels
                     AddSeverMessage($"Nothing saved. You can start another input");
                     ActiveCommand = Commands.Undefined;
                     _askForConfirmation = false;
+                    _inputItem.MeasurementType = Measurement.NotSet;
                     return;
                 }
             }
 
-            if ((ActiveCommand == Commands.Undefined) || ((ActiveCommand != command) && _dataInInputMode == false))
+            if ((ActiveCommand == Commands.Undefined) || (ActiveCommand == Commands.Input) || (ActiveCommand == Commands.ShowList) || (ActiveCommand == Commands.ShowChart) || ((ActiveCommand != command) && (_dataInInputMode == false)))
             {
                 Debug.WriteLine($"Command set from {ActiveCommand} to {command}");
                 ActiveCommand = command;
@@ -168,12 +219,22 @@ namespace HealthAssistant.ViewModels
                         break;
                     case Commands.ShowList:
                         Debug.WriteLine("Show list command");
+                        AddSeverMessage("Which measurement do you want to see? Blood Pressure, Weight, Temeprature, Pulse or Glucose?");
+                        ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
+                        break;
+                    case Commands.ShowListPulse:
+                        Debug.WriteLine("Show list pulse command");
                         ShowInput = false;
-                        ShowBloodPressureList = true;
-                        ShowGlucoseList = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
                         ShowPulseList = true;
-                        ShowTemperatureList = true;
-                        ShowWeightList = true;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
                         break;
                     case Commands.ShowListWeight:
                         ShowInput = false;
@@ -227,40 +288,73 @@ namespace HealthAssistant.ViewModels
                         break;
                     case Commands.Input:
                         ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
                         _dataInInputMode = true;
                         break;
                     case Commands.InputWeight:
                         ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
                         Debug.WriteLine("Weight input");
                         _dataInInputMode = true;
                         _inputItem.MeasurementType = Measurement.Weight;
                         break;
                     case Commands.InputGlucose:
                         ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
                         Debug.WriteLine("Glucse input");
                         _dataInInputMode = true;
                         _inputItem.MeasurementType = Measurement.Glucose;
                         break;
                     case Commands.InputBloodPressure:
                         ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
                         Debug.WriteLine("Blood presure");
                         _dataInInputMode = true;
                         _inputItem.MeasurementType = Measurement.BloodPressure;
                         break;
+                    case Commands.InputPulse:
+                        ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
+                        Debug.WriteLine("Pulse");
+                        _dataInInputMode = true;
+                        _inputItem.MeasurementType = Measurement.Pulse;
+                        break;
                     case Commands.InputTemperature:
                         ShowInput = true;
+                        ShowBloodPressureList = false;
+                        ShowGlucoseList = false;
+                        ShowPulseList = false;
+                        ShowTemperatureList = false;
+                        ShowWeightList = false;
                         Debug.WriteLine("Temperature input");
                         _dataInInputMode = true;
                         _inputItem.MeasurementType = Measurement.Temperature;
                         break;
                     case Commands.Pause:
-                        ShowInput = true;
                         break;
                     case Commands.Continue:
-                        ShowInput = true;
                         break;
                     case Commands.Undefined:
-                        ShowInput = true;
                         break;
                     default:
                         ShowInput = true;
@@ -312,6 +406,13 @@ namespace HealthAssistant.ViewModels
                 Debug.WriteLine($"Data is First: {firstValue} second: {secondValue} Time: {retTime} Date: {retDate}");
             }
             LogState();
+            if ((_inputItem.MeasurementType == Measurement.NotSet))
+            {
+
+                Debug.WriteLine("Ask for input type");
+                AddSeverMessage($"Please tell me what you have measured, e.g. blood pressure, weight or temperature?");
+                return;
+            }
             if (!_inputItem.HasValue)
             {
                 Debug.WriteLine("Ask for values");
@@ -365,14 +466,30 @@ namespace HealthAssistant.ViewModels
         public async void OnAppearing()
         {
 
-            Debug.WriteLine("Viewodel on paeragin");
+            Debug.WriteLine("Viewodel OnAppearing");
             ActiveCommand = Commands.Undefined;
             IsBusy = true;
             IsListening = false;
             AppState = "Click Mic to start listening.";
             Messages.Clear();
             Messages.Add(new MessageDetailViewModel() { Sender = MessageSender.Server, Message = $"{WelcomeMessage}" });
-
+            var bpList = await _dataStore.GetItemsAsync(Measurement.BloodPressure);
+            BloodPressureList = new ObservableCollection<MeasuredItem>();
+            foreach (var bp in bpList)
+            {
+                BloodPressureList.Add(bp);
+            }
+            var tempList = await _dataStore.GetItemsAsync(Measurement.Temperature);
+            foreach (var item in tempList)
+            {
+                TemperatureList.Add(new InputItemViewModel(item));
+            }
+            var pulseList = await _dataStore.GetItemsAsync(Measurement.Pulse);
+            PulseList = new ObservableCollection<MeasuredItem>(pulseList);
+            var glucseoList = await _dataStore.GetItemsAsync(Measurement.Weight);
+            WeightList = new ObservableCollection<MeasuredItem>(glucseoList);
+            var weightList = await _dataStore.GetItemsAsync(Measurement.Weight);
+            WeightList = new ObservableCollection<MeasuredItem>(weightList);
             IsBusy = false;
         }
 
@@ -421,6 +538,18 @@ namespace HealthAssistant.ViewModels
             Debug.WriteLine($"GetTextInput {Text}");
             AddClientMessage(Text);
             AnalyzeText(Text);
+        }
+
+
+        string _directTextInput;
+
+        public string DirectTextInput
+        {
+            get => _directTextInput;
+            private set
+            {
+                SetProperty(ref _directTextInput, value);
+            }
         }
 
         private bool _showBloodPressureList = false;

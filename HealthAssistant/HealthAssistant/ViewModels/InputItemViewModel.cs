@@ -1,17 +1,23 @@
-﻿using HealthAssistant.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using HealthAssistant.Models;
 
 namespace HealthAssistant.ViewModels
 {
-    public class InputItemViewModel
+    public class InputItemViewModel: ObservableObject
     {
         public InputItemViewModel()
         {
             Item = new MeasuredItem();
             Item.MeasurementType = Models.Measurement.NotSet;
-            MeasuredValue = 0;
-            SysValue = 0;
-            DiaValue = 0;
+            MeasuredValue = null;
+            SysValue = null;
+            DiaValue = null;
             MeasurementDateTime = DateTime.MinValue;
+        }
+
+        public InputItemViewModel(MeasuredItem MeasureItem)
+        {
+            Item = MeasureItem;
         }
 
         public MeasuredItem Item { get; private set; }
@@ -50,7 +56,7 @@ namespace HealthAssistant.ViewModels
 
             set
             {
-                if (value.HasValue)
+                if (value.HasValue && value.Value > 0)
                 {
                     Item.MeasuredValue = value.Value;
                 }
@@ -66,7 +72,7 @@ namespace HealthAssistant.ViewModels
 
             set
             {
-                if (value.HasValue)
+                if (value.HasValue && value.Value > 0)
                 {
                     Item.SysValue = value.Value;
                 }
@@ -82,23 +88,18 @@ namespace HealthAssistant.ViewModels
 
             set
             {
-                if (value.HasValue)
+                if (value.HasValue && value.Value > 0) 
                 {
                     Item.DiaValue = value.Value;
                 }
             }
         }
 
-        public MeasurementUnit Unit
+        public string Unit
         {
             get
             {
                 return Item.Unit;
-            }
-
-            set
-            {
-                Item.Unit = value;
             }
         }
 
@@ -124,11 +125,43 @@ namespace HealthAssistant.ViewModels
         {
             get
             {
-                if ((Item.MeasurementType == Measurement.BloodPressure) && (DiaValue == null) && (SysValue == null))
-                    return false;
-                if (MeasuredValue == null)
-                    return false;
-                return true;
+                if (Item.MeasurementType == Measurement.BloodPressure)
+                {
+                    if ((SysValue == null) || (DiaValue == null))
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        if ((SysValue <= 0) || (DiaValue <= 0))
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+
+                }
+                else
+                {
+                    if (MeasuredValue == null)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        if (MeasuredValue <= 0)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                }
             }
         }
 

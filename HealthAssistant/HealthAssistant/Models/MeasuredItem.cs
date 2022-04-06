@@ -21,13 +21,6 @@ namespace HealthAssistant.Models
         Weight,
         NotSet
     };
-    public enum MeasurementUnit
-    {
-        mmHg,
-        bpm,
-        Celsius,
-        Unknown
-    };
     public class MeasuredItem
     {
         public  MeasuredItem()
@@ -44,7 +37,29 @@ namespace HealthAssistant.Models
         public double MeasuredValue { get; set; }
         public double SysValue { get; set; }
         public double DiaValue { get; set; }
-        public MeasurementUnit Unit { get; set; }
+        public string Unit 
+        { 
+            get
+            {
+                switch (MeasurementType)
+                {
+                    case Measurement.BloodPressure:
+                        return "mmHg";
+                    case Measurement.Glucose:
+                        return "ml/DL";
+                    case Measurement.Pulse:
+                        return "bpm";
+                    case Measurement.Temperature:
+                        return "°C";
+                    case Measurement.Weight:
+                        return "kg";
+                    case Measurement.NotSet:
+                        return "";
+                    default:
+                        return "";
+                }
+            }
+        }
 
     }
 }

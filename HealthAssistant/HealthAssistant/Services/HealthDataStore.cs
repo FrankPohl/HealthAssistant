@@ -40,12 +40,10 @@ namespace HealthAssistant.Services
             {
                 Item.DiaValue = Convert.ToDouble(splittedString[3]);
                 Item.SysValue = Convert.ToDouble(splittedString[4]);
-                Item.Unit = (MeasurementUnit)Enum.Parse(typeof(MeasurementUnit), splittedString[5]);
             }
             else
             {
                 Item.MeasuredValue = Convert.ToDouble(splittedString[3]);
-                Item.Unit = (MeasurementUnit)Enum.Parse(typeof(MeasurementUnit), splittedString[4]);
             }
             return Item;
         }

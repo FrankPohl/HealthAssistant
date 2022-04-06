@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -9,20 +10,23 @@ namespace HealthAssistant.Services
         Undefined,
         Show,
         ShowList,
-        ShowListWeight,
-        ShowLIstGlucose,
         ShowListBloodPressure,
+        ShowLIstGlucose,
+        ShowListPulse,
         ShowListTemperature,
+        ShowListWeight,
         ShowChart,
-        ShowLChartWeight,
-        ShowChartGlucose,
         ShowChartBloodPressure,
+        ShowChartGlucose,
+        ShowChartPulse,
         ShowChartTemperature,
+        ShowLChartWeight,
         Input,
-        InputWeight,
-        InputGlucose,
         InputBloodPressure,
+        InputGlucose,
+        InputPulse,
         InputTemperature,
+        InputWeight,
         Pause,
         Continue
     }
@@ -49,6 +53,8 @@ namespace HealthAssistant.Services
         // This is used to determine in which mode the user wants to be with his utterance
         public Commands GetCommandInText(string Text)
         {
+            if (Text == null)
+                return Commands.Undefined;
             Commands actvivity = Commands.Undefined;
             Commands type = Commands.Undefined;
             string evalString = Text.ToLower();
@@ -79,10 +85,13 @@ namespace HealthAssistant.Services
                 actvivity = Commands.Input;
             }
             // check 
-            string[] showCommandArray = { "show", "open", "go", "öffnen", "gehe zu" };
-            if (showCommandArray.Any(evalString.Contains))
+            if (actvivity == Commands.Undefined)
             {
-                actvivity = Commands.Show;
+                string[] showCommandArray = { "show", "open", "go", "öffnen", "gehe zu" };
+                if (showCommandArray.Any(evalString.Contains))
+                {
+                    actvivity = Commands.Show;
+                }
             }
 
             // final possibility if he just gives a type we guess at least the
@@ -94,6 +103,7 @@ namespace HealthAssistant.Services
                 {
                     case Commands.Input:
                         return Commands.InputWeight;
+                    case Commands.Show:
                     case Commands.ShowList:
                         return Commands.ShowListWeight;
                     case Commands.ShowChart:
@@ -109,6 +119,7 @@ namespace HealthAssistant.Services
                 {
                     case Commands.Input:
                         return Commands.InputBloodPressure;
+                    case Commands.Show:
                     case Commands.ShowList:
                         return Commands.ShowListBloodPressure;
                     case Commands.ShowChart:
@@ -124,12 +135,29 @@ namespace HealthAssistant.Services
                 {
                     case Commands.Input:
                         return Commands.InputTemperature;
+                    case Commands.Show:
                     case Commands.ShowList:
                         return Commands.ShowListTemperature;
                     case Commands.ShowChart:
                         return Commands.ShowChartTemperature;
                     default:
                         return Commands.InputTemperature;
+                }
+            }
+            string[] pulsArray = { "heart reate", "beats per minute", "bpm", "puls" };
+            if (pulsArray.Any(evalString.Contains))
+            {
+                switch (actvivity)
+                {
+                    case Commands.Input:
+                        return Commands.InputPulse;
+                    case Commands.Show:
+                    case Commands.ShowList:
+                        return Commands.ShowListPulse;
+                    case Commands.ShowChart:
+                        return Commands.ShowChartPulse;
+                    default:
+                        return Commands.InputPulse;
                 }
             }
             string[] glucoseArray = { "glucose", "sugar", "zucker" };
@@ -139,6 +167,7 @@ namespace HealthAssistant.Services
                 {
                     case Commands.Input:
                         return Commands.InputGlucose;
+                    case Commands.Show:
                     case Commands.ShowList:
                         return Commands.ShowLIstGlucose;
                     case Commands.ShowChart:
@@ -147,11 +176,19 @@ namespace HealthAssistant.Services
                         return Commands.InputGlucose;
                 }
             }
-            return Commands.Undefined;
+            if (actvivity != Commands.Undefined)
+            {
+                return actvivity;
+            }
+            else
+            {
+                return Commands.Undefined;
+            }
         }
 
         public double? GetFirstValue(string Text)
         {
+            string matchValue = "";
             string pattern = @"(?:um|at) \d{2,3}(?:.|,)?\d{0,1}(?: |$)";
             var matches = Regex.Matches(Text, pattern, RegexOptions.IgnoreCase);
             int timePatternStart = 0;
@@ -167,10 +204,33 @@ namespace HealthAssistant.Services
             {
                 if ((item.Index < timePatternStart) || (item.Index > timePatternEnd))
                 {
-                    return Convert.ToDouble(item.Value);
+                    matchValue = item.Value;
                 }
             }
-            return null;
+            pattern = @"\d{2,3}(?:.|,|)\d{0,1}$";
+            matches = Regex.Matches(Text, pattern, RegexOptions.IgnoreCase);
+            foreach (Match item in matches)
+            {
+                matchValue = item.Value;
+            }
+            if (String.IsNullOrEmpty(matchValue))
+            {
+                return null;
+            }
+            else
+            {
+                NumberFormatInfo formatProvider = new NumberFormatInfo();
+                if (matchValue.Contains('.'))
+                {
+                    formatProvider.NumberDecimalSeparator = ".";
+                }
+                else
+                {
+                    formatProvider.NumberDecimalSeparator = ",";
+                }
+                return Convert.ToDouble(matchValue, formatProvider);
+
+            }
         }
 
         public double? GetSecondValue(string Text)

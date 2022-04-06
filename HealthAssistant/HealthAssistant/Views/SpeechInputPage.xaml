@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:helpers="clr-namespace:HealthAssistant.Helpers"
              x:Class="HealthAssistant.Views.SpeechInputPage"
+             x:Name="InputPage"
              BackgroundColor="{DynamicResource SecondaryColor}">
     <ContentPage.Resources>
         <helpers:StateToImageConverter x:Key="StateToImageConverter" />
@@ -30,7 +31,6 @@
         </DataTemplate>
 
         <DataTemplate x:Key="BloodPressureTemplate">
-            <ViewCell>
                 <StackLayout Orientation="Horizontal"
                         Margin="6"
                         Padding="3"
@@ -40,7 +40,6 @@
                     <Label Text="{Binding SysValue}" TextColor="White" />
                     <Label Text="{Binding DiaValue}" TextColor="White" />
                 </StackLayout>
-            </ViewCell>
         </DataTemplate>
         <DataTemplate x:Key="MeasurementTemplate">
             <ViewCell>
@@ -49,8 +48,9 @@
                         Padding="3"
                         BackgroundColor="#4286f4"
                        >
-                    <Label Text="{Binding MeasurementDateTime}" TextColor="White" />
-                    <Label Text="{Binding Measurement}" TextColor="White" />
+                <Label Text="Test" TextColor="Green"/>
+                <Label Text="{Binding MeasurementDateTime}" TextColor="White" />
+                <Label Text="{Binding MeasuredValue}" TextColor="White" />
                 </StackLayout>
             </ViewCell>
         </DataTemplate>
@@ -62,40 +62,48 @@
 
     </ContentPage.Resources>
 
-    <Grid RowDefinitions="*,*,*,*,*, 48, Auto"
+    <Grid RowDefinitions="*, 56, Auto"
               Padding="{OnPlatform iOS='30,60,30,30', Default='30'}">
 
-        <!-- The visulization -->
-        <StackLayout Grid.Row="0" IsVisible="{Binding ShowBloodPressureList}">
+        <!-- The visualization of values -->
+        <!--<StackLayout Grid.Row="0" IsVisible="{Binding ShowBloodPressureList}">
             <Label Text="Blood pressure"/>
-            <ListView ItemsSource="{Binding BloodPressureList, Mode=OneWay}" ItemTemplate="{StaticResource BloodPressureTemplate}"/>
+            <Label Text="{Binding BloodPressureList.Count}"/>
+            <ListView ItemsSource="{Binding BloodPressureList, Mode=OneWay}" ItemTemplate="{StaticResource BloodPressureTemplate}" BackgroundColor="Blue"/>
         </StackLayout>
-        <StackLayout Grid.Row="1" IsVisible="{Binding ShowPulseList}">
+        <StackLayout Grid.Row="0" IsVisible="{Binding ShowPulseList}">
             <Label Text="Pulse"/>
-            <ListView ItemsSource="{Binding PulseList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
+            <Label Text="{Binding BloodPressureList.Count}"/>
+            <ListView ItemsSource="{Binding PulseList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}" BackgroundColor="Blue"/>
         </StackLayout>
-        <StackLayout Grid.Row="2" IsVisible="{Binding ShowGlucoseList}">
+        <StackLayout Grid.Row="0" IsVisible="{Binding ShowGlucoseList}">
             <Label Text="Glucose"/>
-            <ListView ItemsSource="{Binding GlucoseList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
+            <Label Text="{Binding BloodPressureList.Count}"/>            
+            <ListView ItemsSource="{Binding GlucoseList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}" BackgroundColor="Blue"/>
+        </StackLayout>-->
+        <StackLayout Grid.Row="0" >
+            <StackLayout Orientation="Horizontal">
+                <Label Text="Temperature"/>
+                <Label Text="{Binding TemperatureList.Count, Mode=OneWay}"/>
+                <Label Text="values"/>
+            </StackLayout>
+            <ListView ItemsSource="{Binding TemperatureList, Mode=OneWay}" IsVisible="True" ItemTemplate="{StaticResource MeasurementTemplate}" />
         </StackLayout>
-        <StackLayout Grid.Row="3" IsVisible="{Binding ShowTemperatureList}">
-            <Label Text="Temperature"/>
-            <ListView ItemsSource="{Binding TemperatureList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
-        </StackLayout>
-        <StackLayout Grid.Row="4" IsVisible="{Binding ShowWeightList}">
+        <!--<StackLayout Grid.Row="0" IsVisible="{Binding ShowWeightList}">
             <Label Text="Weight"/>
-            <ListView ItemsSource="{Binding WeightList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}"/>
-        </StackLayout>
+            <Label Text="{Binding WeightList.Count}"/>
+            <ListView ItemsSource="{Binding WeightList, Mode=OneWay}" ItemTemplate="{StaticResource MeasurementTemplate}" BackgroundColor="Red"/>
+        </StackLayout>-->
 
         <!-- Chat input option -->
-        <CollectionView Grid.Row="0" Grid.RowSpan="5"    CollectionView.ItemTemplate="{StaticResource ChatDataTemplateSelector}" 
-          ItemsSource="{Binding Messages, Mode=OneWay}" ItemsUpdatingScrollMode="KeepLastItemInView" IsVisible="{Binding ShowInput}"/>
-            <Grid Grid.Row="5" ColumnDefinitions="*,Auto, Auto">
-                <Entry Grid.Column="0" x:Name="TextInput" ClearButtonVisibility="WhileEditing" Placeholder="Type in your input here or use speech input (click on Mic to start listening)." VerticalOptions="Center"/>
+        <!--<CollectionView Grid.Row="0" CollectionView.ItemTemplate="{StaticResource ChatDataTemplateSelector}" 
+          ItemsSource="{Binding Messages, Mode=OneWay}" ItemsUpdatingScrollMode="KeepLastItemInView" IsVisible="{Binding ShowInput}"/>-->
+            <Grid Grid.Row="1" ColumnDefinitions="*,Auto, Auto">
+            <Entry Grid.Column="0" x:Name="TextInput" Text="{Binding DirectTextInput, Mode=TwoWay}" ClearButtonVisibility="WhileEditing" Placeholder="Type in your input here or use speech input (click on Mic to start listening)." VerticalOptions="Center"/>
             <Button Grid.Column="1" Text="Process Text" Command="{Binding ProcessTextCommand, Mode=OneWay}" CommandParameter="{Binding Source={x:Reference TextInput}, Path=Text}" Margin="12,0,12,0" VerticalOptions="Center"/>
-             <ImageButton Grid.Column="2" Command="{Binding StartRecognitionCommand, Mode=OneWay}"  Source="{Binding IsListening, Converter={StaticResource StateToImageConverter}}" HeightRequest="44" WidthRequest="44" BackgroundColor="Transparent" Aspect="Fill" Padding="0"/>
+            <ImageButton Grid.Column="2" Command="{Binding StartRecognitionCommand, Mode=OneWay}"  Source="{Binding IsListening, Converter={StaticResource StateToImageConverter}}" BackgroundColor="Transparent" Padding="0"/>
         </Grid>
-        <Label Grid.Row="6" Margin="0,0,0,6" Text= "{Binding AppState, Mode=OneWay}" TextColor="{StaticResource PrimaryColor}" HorizontalOptions="Center"/>
+        <Label Grid.Row="2" Margin="0,0,0,6" Text= "{Binding AppState, Mode=OneWay}" TextColor="{StaticResource PrimaryColor}" HorizontalOptions="Center"/>
 
     </Grid>
 </ContentPage>

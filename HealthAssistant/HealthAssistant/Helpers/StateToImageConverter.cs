@@ -10,7 +10,7 @@ namespace HealthAssistant.Helpers
             var boolVal = (bool)value;
             if (boolVal)
             {
-                return ImageSource.FromFile("mic.png");
+                return ImageSource.FromFile("mic_recording.png");
 
             }
             else

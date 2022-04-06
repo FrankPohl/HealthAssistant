@@ -4,7 +4,6 @@ namespace HealthAssistant.Views;
 
 public partial class SpeechInputPage : ContentPage
 {
-	int count = 0;
 	SpeechInputViewModel vm;
 	public SpeechInputPage()
 	{
@@ -23,9 +22,5 @@ public partial class SpeechInputPage : ContentPage
         base.OnDisappearing();
     }
 
-    private void OnTextInput_Clicked(object sender, EventArgs e)
-    {
-        vm.SetInputAsText(this.TextInput.Text);
-    }
 }
 

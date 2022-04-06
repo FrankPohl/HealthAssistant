@@ -46,23 +46,26 @@ public class SpeechRecognizer:ISpeechRecognizer
         return resampledOutput;
     }
 
-    int _recordingLength = 0;
+    double _recordingLength = 0;
+
     void OnDataAvailableConvert(object sender, WaveInEventArgs e)
     {
+        //TODO: Check for empty buffer to prevent sending ewmpty buffers
+
         var convertedBuffer = Convert32BitTo16Bit(e.Buffer, e.BytesRecorded);
         _deepgramLive.SendData(convertedBuffer);
-        
-        //int secondsRecorded = (int)(_waveWriter.Length / _waveWriter.WaveFormat.AverageBytesPerSecond);
-        //if (secondsRecorded >= 30)
-        //{
-        //    Debug.WriteLine("Stop automatically after 30 seconds ");
-        //    _waveIn.StopRecording();
-        //}
+        _recordingLength += e.BytesRecorded / _bytesPerSecond;
+        if (_recordingLength >= 60)
+        {
+            Debug.WriteLine("Stop automatically after 60 seconds ");
+            _waveIn.StopRecording();
+        }
     }
 
     void OnRecordingStopped(object sender, StoppedEventArgs e)
     {
         _recordingLength = 0;
+        _deepgramLive.FinishAsync();
         Debug.WriteLine($"   Recordinfg stopped");
     }
 
@@ -75,13 +78,13 @@ public class SpeechRecognizer:ISpeechRecognizer
     void DeepgramLive_ConnectionOpened(object sender, ConnectionOpenEventArgs e)
     {
         Debug.WriteLine("Deepgram Connection opened");
+        RecognizerStartedListening?.Invoke(this, EventArgs.Empty);
     }
 
     void DeepgramLive_TranscriptReceived(object sender, TranscriptReceivedEventArgs e)
     {
-        //TODO: Check for empty buffer to prevent sending ewmpty buffers
-        //Debug.WriteLine("Transcript received");
-        {
+        Debug.WriteLine("Transcript received");
+        RecognizerIsProcessing?.Invoke(this, EventArgs.Empty);
             if (e.Transcript.IsFinal &&
                 e.Transcript.Channel.Alternatives.First().Transcript.Length > 0)
             {
@@ -90,8 +93,8 @@ public class SpeechRecognizer:ISpeechRecognizer
                 Debug.WriteLine($"Deepgram Recognition: {recognizedValue}");
                 RecognitionResult?.Invoke(this, recognizedValue);
             }
-        }
     }
+
 
     void DeepgramLive_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
     {
@@ -104,6 +107,8 @@ public class SpeechRecognizer:ISpeechRecognizer
     public event EventHandler RecognizerIsProcessing;
     public event EventHandler<string> RecognitionResult;
     public event EventHandler<RecognizerError> RecognizerException;
+
+    private double _bytesPerSecond;  // used to do a rough calculation of the recording legnth
 
     public async Task StarListening(CultureInfo RecognitionCulture = null, int EndSilenceInMs = 1500, bool RestartAfterAutoStop = false)
     {
@@ -126,6 +131,8 @@ public class SpeechRecognizer:ISpeechRecognizer
         Debug.WriteLine($"   Bits per sample: {_waveIn.WaveFormat.BitsPerSample}");
         Debug.WriteLine($"   Channels: {_waveIn.WaveFormat.Channels}");
 
+        _bytesPerSecond = _waveIn.WaveFormat.SampleRate * _waveIn.WaveFormat.BitsPerSample * _waveIn.WaveFormat.Channels / 8;
+        Debug.WriteLine($"Bytes per second {_bytesPerSecond}");
         var waveOutFormat = new WaveFormat(_waveIn.WaveFormat.SampleRate / 3, 2);
 
         const string secret = "6ad54b90768a3c6f88af80f633682fae31b87201";
@@ -158,11 +165,12 @@ public class SpeechRecognizer:ISpeechRecognizer
         await _deepgramLive.StartConnectionAsync(options);
 
     }
+
     public void StopListening()
     {
         _waveIn.StopRecording();
         _deepgramLive.FinishAsync();
-        Debug.WriteLine($"Stop tlistneing");
+        Debug.WriteLine($"Stop listening");
 
     }
 }
