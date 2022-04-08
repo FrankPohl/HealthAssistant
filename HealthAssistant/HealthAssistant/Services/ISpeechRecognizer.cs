@@ -11,7 +11,6 @@ namespace HealthAssistant.Services
 
     public interface ISpeechRecognizer
     {
-
         /// <summary>
         /// Starts the listener which translates audio to text
         /// Check for Micorphone access before calling this
@@ -20,23 +19,28 @@ namespace HealthAssistant.Services
         /// <param name="EndSilenceInMs">Optional silence in audio thta signals the end of the input. After this period of silence the RecognitionResult event is thrown</param>
         /// <param name="RestartAfterAutoStop">If set to true this will restart infinetly. This is necessary because some Online recognizers limit the connection to save bandwidth</param>
         Task StarListening(CultureInfo RecognitionCulture = null, int EndSilenceInMs = 1500, bool RestartAfterAutoStop = false);
+
         /// <summary>
         /// Stop the listener
         /// </summary>
         void StopListening();
+
         /// <summary>
         /// The listener is ready to work
         /// At least once after Initialization in StartListening is finished
         /// </summary>
         event EventHandler RecognizerStartedListening;
+
         ///// <summary>
         ///// The listener has stopped. Nothing will be recognized any longer.
         ///// </summary>
         event EventHandler RecognizerStoppedListening;
+
         ///// <summary>
         ///// Audio input is porocessed.
         ///// </summary>
         event EventHandler RecognizerIsProcessing;
+
         ///// <summary>
         ///// After text is recognized
         ///// </summary>
@@ -44,7 +48,7 @@ namespace HealthAssistant.Services
 
         ///// <summary>
         ///// In case an error occured this event is thrown.
-        ///// 
+        /////
         ///// </summary>
         event EventHandler<RecognizerError> RecognizerException;
 
@@ -55,7 +59,7 @@ namespace HealthAssistant.Services
         //Task CheckAndRequestMicPermission();
 
         ///// <summary>
-        ///// Does the device contain a microphone. 
+        ///// Does the device contain a microphone.
         ///// If there is no microphone it is not necessary to ask for permission to use it
         ///// </summary>
         //bool DeviceHasMicrophone { get; }
@@ -65,7 +69,5 @@ namespace HealthAssistant.Services
         ///// If paramneter RecognitionCulture is not given in the StartListening call it is the default culture
         ///// </summary>
         //CultureInfo RecognitionCulture { get; }
-
-
     }
 }

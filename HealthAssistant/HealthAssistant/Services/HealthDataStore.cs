@@ -1,20 +1,25 @@
 ﻿using HealthAssistant.Models;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HealthAssistant.Services
 {
     internal class HealthDataStore : IDataStore<MeasuredItem>
-    {   
-
-        private string CreateFileNameForType(Measurement Type)
+    {
+     
+        /// <summary>
+        /// Every data for the different measurement types is stored in separate files.
+        /// </summary>
+        /// <param name="Type">Type of measurement to get file name for</param>
+        /// <returns></returns>
+        private string GetFileNameForType(Measurement Type)
         {
-           return Path.Combine(FileSystem.AppDataDirectory, $"{Type}.csv");
+            return Path.Combine(FileSystem.AppDataDirectory, $"{Type}.csv");
         }
 
+        /// <summary>
+        /// Convert item data into a ";" separated list
+        /// </summary>
+        /// <param name="Item"></param>
+        /// <returns></returns>
         private string ConvertItemToStorageString(MeasuredItem Item)
         {
             var str = $"{Item.Id};{Item.MeasurementType};{Item.MeasurementDateTime.ToUniversalTime()};";
@@ -28,6 +33,12 @@ namespace HealthAssistant.Services
             }
             return str;
         }
+
+        /// <summary>
+        /// Convert the stored data into an object
+        /// </summary>
+        /// <param name="StoredString">String with the data for the item</param>
+        /// <returns></returns>
         private MeasuredItem ConvertStorageStringToItem(string StoredString)
         {
             MeasuredItem Item = new MeasuredItem();
@@ -35,7 +46,7 @@ namespace HealthAssistant.Services
             Item.Id = splittedString[0];
             Item.MeasurementType = (Measurement)Enum.Parse(typeof(Measurement), splittedString[1]);
             Item.MeasurementDateTime = DateTime.Parse(splittedString[2]);
-            
+
             if (Item.MeasurementType == Measurement.BloodPressure)
             {
                 Item.DiaValue = Convert.ToDouble(splittedString[3]);
@@ -47,24 +58,25 @@ namespace HealthAssistant.Services
             }
             return Item;
         }
+
         /// <summary>
-        /// Create the data storage (files) for a given type of measurement 
+        /// Create the data storage (files) for a given type of measurement
+        /// and write the first line with the column info
         /// </summary>
         /// <param name="Type">Type of the measurement that is to be stored</param>
         private void CreateDataSourceForType(Measurement Type)
         {
-            var fileName = CreateFileNameForType(Type);
+            var fileName = GetFileNameForType(Type);
 
             if (!File.Exists(fileName))
             {
                 using (var stream = File.OpenWrite(fileName))
                 {
-
                     using (var streamWriter = new StreamWriter(stream))
                     {
                         if (Type == Measurement.BloodPressure)
                         {
-                            streamWriter.WriteLine("ID;MeasuredType;MeasurmentDateTime;Sys;Dia;Unit;");
+                            streamWriter.WriteLine("ID;MeasuredType;MeasurmentDateTime;Systolic;Diastolic;Unit;");
                         }
                         else
                         {
@@ -74,23 +86,25 @@ namespace HealthAssistant.Services
                         streamWriter.Close();
                     }
                 }
-
             }
         }
- 
+
         public HealthDataStore()
         {
+            // Create all the files and write 
             CreateDataSourceForType(Measurement.BloodPressure);
             CreateDataSourceForType(Measurement.Glucose);
             CreateDataSourceForType(Measurement.Pulse);
             CreateDataSourceForType(Measurement.Temperature);
+            CreateDataSourceForType(Measurement.Weight);
         }
+
         public async Task<bool> AddItemAsync(MeasuredItem item)
         {
             if (item == null || item.MeasurementType == Measurement.NotSet)
                 return await Task.FromResult(false);
 
-            var fileName = CreateFileNameForType(item.MeasurementType);
+            var fileName = GetFileNameForType(item.MeasurementType);
             using (var streamWriter = File.AppendText(fileName))
             {
                 item.Id = Guid.NewGuid().ToString();
@@ -99,23 +113,23 @@ namespace HealthAssistant.Services
             return await Task.FromResult(true);
         }
 
-        public Task<bool> DeleteItemAsync(string id)
+        public Task<bool> DeleteItemAsync(MeasuredItem Item)
         {
             throw new NotImplementedException();
         }
 
-        public Task<MeasuredItem> GetItemAsync(string id)
+        public Task<MeasuredItem> GetItemAsync(string Id)
         {
             throw new NotImplementedException();
         }
 
         public async Task<IEnumerable<MeasuredItem>> GetItemsAsync(Measurement Type)
         {
-            var fileName = CreateFileNameForType(Type);
+            var fileName = GetFileNameForType(Type);
             string[] lines = File.ReadAllLines(fileName);
-            
+
             var items = new List<MeasuredItem>();
-            // the first line is the heading
+            // the first line is the heading so start at line 1
             for (int i = 1; i < lines.Length; i++)
             {
                 items.Add(ConvertStorageStringToItem(lines[i]));
@@ -123,7 +137,7 @@ namespace HealthAssistant.Services
             return items;
         }
 
-        public Task<bool> UpdateItemAsync(MeasuredItem item)
+        public Task<bool> UpdateItemAsync(MeasuredItem Item)
         {
             throw new NotImplementedException();
         }

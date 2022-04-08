@@ -3,7 +3,7 @@ using HealthAssistant.Models;
 
 namespace HealthAssistant.ViewModels
 {
-    public class InputItemViewModel: ObservableObject
+    public class InputItemViewModel : ObservableObject
     {
         public InputItemViewModel()
         {
@@ -34,6 +34,7 @@ namespace HealthAssistant.ViewModels
                 Item.MeasurementType = value;
             }
         }
+
         public DateTime MeasurementDateTime
         {
             get
@@ -88,7 +89,7 @@ namespace HealthAssistant.ViewModels
 
             set
             {
-                if (value.HasValue && value.Value > 0) 
+                if (value.HasValue && value.Value > 0)
                 {
                     Item.DiaValue = value.Value;
                 }
@@ -107,10 +108,10 @@ namespace HealthAssistant.ViewModels
         {
             get
             {
-
                 return Item.MeasurementDateTime.Date != DateTime.MinValue;
             }
         }
+
         public bool TimeIsSet
         {
             get
@@ -118,9 +119,11 @@ namespace HealthAssistant.ViewModels
                 if (Item.MeasurementDateTime.TimeOfDay == TimeSpan.Zero)
                 {
                     return false;
-                } else { return true; }
+                }
+                else { return true; }
             }
         }
+
         public bool HasValue
         {
             get
@@ -142,7 +145,6 @@ namespace HealthAssistant.ViewModels
                             return true;
                         }
                     }
-
                 }
                 else
                 {
@@ -172,7 +174,5 @@ namespace HealthAssistant.ViewModels
                 return HasValue && DateIsSet && TimeIsSet;
             }
         }
-
     }
-
 }

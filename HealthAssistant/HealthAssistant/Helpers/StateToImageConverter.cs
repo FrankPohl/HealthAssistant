@@ -1,9 +1,6 @@
-﻿using System;
-using System.Diagnostics;
-
-namespace HealthAssistant.Helpers
+﻿namespace HealthAssistant.Helpers
 {
-    public class StateToImageConverter: IValueConverter
+    public class StateToImageConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {
@@ -11,14 +8,12 @@ namespace HealthAssistant.Helpers
             if (boolVal)
             {
                 return ImageSource.FromFile("mic_recording.png");
-
             }
             else
             {
                 return ImageSource.FromFile("mic_muted.png");
             }
         }
-        
 
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
         {

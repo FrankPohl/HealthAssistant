@@ -1,10 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using System;
 using System.Windows.Input;
 
 namespace HealthAssistant.ViewModels
 {
-    public class AboutViewModel:ObservableObject
+    public class AboutViewModel : ObservableObject
     {
         public AboutViewModel()
         {

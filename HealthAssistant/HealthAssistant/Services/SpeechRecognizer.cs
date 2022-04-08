@@ -1,21 +1,19 @@
-﻿using NAudio.CoreAudioApi;
+﻿using Deepgram;
+using Deepgram.Transcription;
+using NAudio.CoreAudioApi;
 using NAudio.Wave;
 using System.Diagnostics;
 using System.Globalization;
-using Deepgram;
-using Deepgram.Transcription;
-
 
 namespace HealthAssistant.Services;
 
-public class SpeechRecognizer:ISpeechRecognizer
+public class SpeechRecognizer : ISpeechRecognizer
 {
-    DeepgramClient _deepgramClient;
-    ILiveTranscriptionClient _deepgramLive;
-    IWaveIn _waveIn;
+    private DeepgramClient _deepgramClient;
+    private ILiveTranscriptionClient _deepgramLive;
+    private IWaveIn _waveIn;
 
-
-    byte[] Convert32BitTo16Bit(byte[] input, int numberOfBytes)
+    private byte[] Convert32BitTo16Bit(byte[] input, int numberOfBytes)
     {
         byte[] output = new byte[numberOfBytes / 2];
         byte[] resampledOutput = new byte[numberOfBytes / 6];
@@ -46,9 +44,9 @@ public class SpeechRecognizer:ISpeechRecognizer
         return resampledOutput;
     }
 
-    double _recordingLength = 0;
+    private double _recordingLength = 0;
 
-    void OnDataAvailableConvert(object sender, WaveInEventArgs e)
+    private void OnDataAvailableConvert(object sender, WaveInEventArgs e)
     {
         //TODO: Check for empty buffer to prevent sending ewmpty buffers
 
@@ -62,50 +60,52 @@ public class SpeechRecognizer:ISpeechRecognizer
         }
     }
 
-    void OnRecordingStopped(object sender, StoppedEventArgs e)
+    private void OnRecordingStopped(object sender, StoppedEventArgs e)
     {
         _recordingLength = 0;
         _deepgramLive.FinishAsync();
         Debug.WriteLine($"   Recordinfg stopped");
     }
 
-
-    void DeepgramLive_ConnectionError(object sender, ConnectionErrorEventArgs e)
+    private void DeepgramLive_ConnectionError(object sender, ConnectionErrorEventArgs e)
     {
         Debug.WriteLine($"Deepgram Error: {e.Exception.Message}");
     }
 
-    void DeepgramLive_ConnectionOpened(object sender, ConnectionOpenEventArgs e)
+    private void DeepgramLive_ConnectionOpened(object sender, ConnectionOpenEventArgs e)
     {
         Debug.WriteLine("Deepgram Connection opened");
         RecognizerStartedListening?.Invoke(this, EventArgs.Empty);
     }
 
-    void DeepgramLive_TranscriptReceived(object sender, TranscriptReceivedEventArgs e)
+    private void DeepgramLive_TranscriptReceived(object sender, TranscriptReceivedEventArgs e)
     {
         Debug.WriteLine("Transcript received");
         RecognizerIsProcessing?.Invoke(this, EventArgs.Empty);
-            if (e.Transcript.IsFinal &&
-                e.Transcript.Channel.Alternatives.First().Transcript.Length > 0)
-            {
-                string recognizedValue = e.Transcript.Channel.Alternatives.First().Transcript;
+        if (e.Transcript.IsFinal &&
+            e.Transcript.Channel.Alternatives.First().Transcript.Length > 0)
+        {
+            string recognizedValue = e.Transcript.Channel.Alternatives.First().Transcript;
 
-                Debug.WriteLine($"Deepgram Recognition: {recognizedValue}");
-                RecognitionResult?.Invoke(this, recognizedValue);
-            }
+            Debug.WriteLine($"Deepgram Recognition: {recognizedValue}");
+            RecognitionResult?.Invoke(this, recognizedValue);
+        }
     }
 
-
-    void DeepgramLive_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
+    private void DeepgramLive_ConnectionClosed(object sender, ConnectionClosedEventArgs e)
     {
         RecognizerStoppedListening?.Invoke(this, EventArgs.Empty);
         Debug.WriteLine("Deepgram Connection closed");
     }
 
     public event EventHandler RecognizerStartedListening;
+
     public event EventHandler RecognizerStoppedListening;
+
     public event EventHandler RecognizerIsProcessing;
+
     public event EventHandler<string> RecognitionResult;
+
     public event EventHandler<RecognizerError> RecognizerException;
 
     private double _bytesPerSecond;  // used to do a rough calculation of the recording legnth
@@ -163,7 +163,6 @@ public class SpeechRecognizer:ISpeechRecognizer
         _waveIn.StartRecording();
 
         await _deepgramLive.StartConnectionAsync(options);
-
     }
 
     public void StopListening()
@@ -171,6 +170,5 @@ public class SpeechRecognizer:ISpeechRecognizer
         _waveIn.StopRecording();
         _deepgramLive.FinishAsync();
         Debug.WriteLine($"Stop listening");
-
     }
 }

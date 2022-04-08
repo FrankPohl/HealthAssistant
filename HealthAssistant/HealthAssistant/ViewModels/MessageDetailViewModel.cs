@@ -1,5 +1,4 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
-using HealthAssistant.Models;
 
 namespace HealthAssistant.ViewModels
 {
@@ -8,14 +7,15 @@ namespace HealthAssistant.ViewModels
         Server,
         User
     };
-    public class MessageDetailViewModel:ObservableObject
+
+    public class MessageDetailViewModel : ObservableObject
     {
         private InputItemViewModel item = new();
         private DateTime messageDateTime;
         private string message;
         private MessageSender sender;
 
-    public DateTime MessageDateTime
+        public DateTime MessageDateTime
         {
             get => messageDateTime;
             set => SetProperty(ref messageDateTime, value);
@@ -30,7 +30,7 @@ namespace HealthAssistant.ViewModels
         public string Message
         {
             get => message;
-            set => SetProperty(ref message, value); 
+            set => SetProperty(ref message, value);
         }
 
         public InputItemViewModel Item
